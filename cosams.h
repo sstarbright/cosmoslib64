@@ -12,6 +12,8 @@ typedef struct Stage Stage;
 // A structure that holds Modules in a linked list.
 // Allows important Modules to be indexed for quick access.
 typedef struct Actor Actor;
+// A structure that holds a tag string.
+typedef struct Tag Tag;
 // A structure that allows for different behavioural code to be attached to actors.
 // Has basic function pointers that may be "overloaded" for varying behaviours
 // Has a void* data block for storing data that any behaviour may need.
@@ -62,14 +64,18 @@ void stage_kill(Stage* stage);
 #ifndef ACTOR_TAGTABLE_SIZE
 // Defines the number of Tags that may be attached per Actor.
 #define ACTOR_TAGTABLE_SIZE 10
+// Defines the size of each Actor's Tag Hash Table.
+#define ACTOR_TAGTABLE_MEMSIZE ACTOR_TAGTABLE_SIZE*sizeof(void*)
 #endif
 
 #ifndef ACTOR_TAG_SIZE
 // Defines the size of each Tag attached to an Actor.
 #define ACTOR_TAG_SIZE 15
-// Defines the size of each Actor's Tag Hash Table.
-#define ACTOR_TAGTABLE_MEMSIZE ACTOR_TAGTABLE_SIZE*ACTOR_TAG_SIZE
 #endif
+
+struct Tag {
+    char tag[ACTOR_TAG_SIZE];
+};
 
 struct Actor {
     // The name of this Actor.
@@ -85,7 +91,7 @@ struct Actor {
     // The hashtable that stores indexed Modules.
     Module* module_table[ACTOR_MODULETABLE_SIZE];
     // The hashtable that stores indexed Tags.
-    char tags[ACTOR_TAGTABLE_SIZE][ACTOR_TAG_SIZE];
+    Tag* tags[ACTOR_TAGTABLE_SIZE];
     // The previous Actor in the linked list.
     Actor* p_actor;
     // The next Actor in the linked list.

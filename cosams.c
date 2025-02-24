@@ -13,7 +13,9 @@ void stage_add_actor(Stage* stage, Actor* actor, bool indexed) {
         stage->actor = actor;
     }
     if (indexed) {
-        hash_add_pointer((void**)stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, actor, offsetof(Actor, indexed));
+        if (hash_add_pointer((void**)stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, actor)) {
+            actor->indexed = true;
+        }
     }
 }
 void stage_life(Stage* stage, float delta) {
@@ -44,7 +46,7 @@ void actor_init(Actor* actor, const char* name) {
     actor->p_actor = actor;
     actor->n_actor = actor;
     memset(actor->module_table, 0, ACTOR_MODULETABLE_MEMSIZE);
-    memset(actor->tags, '\0', ACTOR_TAGTABLE_MEMSIZE);
+    memset(actor->tags, 0, ACTOR_TAGTABLE_MEMSIZE);
 }
 void actor_add_module(Actor* actor, Module* module, bool indexed) {
     if (actor->module) {
@@ -53,25 +55,40 @@ void actor_add_module(Actor* actor, Module* module, bool indexed) {
         actor->module = module;
     }
     if (indexed) {
-        hash_add_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, module, offsetof(Module, indexed));
+        if(hash_add_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, module)) {
+            module->indexed = true;
+        }
+
+        char debug_log_message[40];
+        strcpy(debug_log_message, "Index failure on Actor '");
+        strcpy(debug_log_message, actor->name);
+        strcpy(debug_log_message, "'.");
+        debug_log_write(debug_log_message);
     }
 }
 bool actor_add_tag(Actor* actor, const char* tag) {
-    int tag_slot = hash_get_string_slot((char**)actor->tags, ACTOR_TAGTABLE_SIZE, tag);
-    if (tag_slot >= 0) {
-        strcpy(actor->tags[tag_slot], tag);
+    Tag* new_tag = malloc(sizeof(Tag));
+    if(hash_add_pointer((void**)actor->tags, ACTOR_TAGTABLE_SIZE, tag, new_tag)) {
+        strcpy(new_tag->tag, tag);
         return true;
     }
+
+    char debug_log_message[40];
+    strcpy(debug_log_message, "Tag failure on Actor '");
+    strcpy(debug_log_message, actor->name);
+    strcpy(debug_log_message, "'.");
+    debug_log_write(debug_log_message);
+    free(new_tag);
     return false;
 }
 bool actor_has_tag(Actor* actor, const char* tag) {
-    return hash_get_string((char**)actor->tags, ACTOR_TAGTABLE_SIZE, tag) >= 0;
+    return hash_get_pointer((void**)actor->tags, ACTOR_TAGTABLE_SIZE, tag, offsetof(Tag, tag)) >= 0;
 }
 void actor_pop_tag(Actor* actor, const char* tag) {
-    int tag_slot = hash_get_string((char**)actor->tags, ACTOR_TAGTABLE_SIZE, tag);
-    if (tag_slot >= 0) {
-        memset(actor->tags[tag_slot], '\0', ACTOR_TAG_SIZE);
-    }
+    Tag* pop_tag = hash_pop_pointer((void**)actor->tags, ACTOR_TAGTABLE_SIZE, tag, offsetof(Tag, tag));
+
+    if (pop_tag)
+        free(pop_tag);
 }
 void actor_life(Actor* actor, float delta) {
     Module* current_module = actor->module;
@@ -85,7 +102,7 @@ void actor_life(Actor* actor, float delta) {
 }
 void actor_kill(Actor* actor) {
     if (actor->stage && actor->indexed) {
-        hash_pop_pointer((void**)actor->stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, offsetof(Actor, name), offsetof(Actor, indexed));
+        hash_pop_pointer((void**)actor->stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, offsetof(Actor, name));
     }
     
     linked_pop_from_list(actor, offsetof(Actor, p_actor), offsetof(Actor, n_actor));
@@ -132,7 +149,7 @@ void module_init(Module* module) {
 }
 void module_kill(Module* module) {
     if (module->actor && module->indexed) {
-        hash_pop_pointer((void**)module->actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name), offsetof(Module, indexed));
+        hash_pop_pointer((void**)module->actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name));
     }
        
     linked_pop_from_list(module, offsetof(Module, p_module), offsetof(Module, n_module));
