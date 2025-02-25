@@ -13,7 +13,7 @@ typedef struct Trans2DModule Trans2DModule;
 struct Trans3DModule {
     T3DVec3 position;
     T3DVec3 scale;
-    T3DQuat rotation;
+    T3DVec3 rotation;
     T3DMat4FP* matrix;
 };
 

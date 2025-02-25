@@ -4,10 +4,12 @@ Module* trans3Dmodule_create() {
     Module* new_module = module_create("Trans3D");
 
     Trans3DModule* new_trans = malloc(sizeof(Trans3DModule));
-    new_trans->matrix = malloc_uncached(sizeof(T3DMat4FP));
-    new_trans->position = {0f,0f,0f};
-    new_trans->scale = {1f,1f,1f};
-    t3d_quat_identity(&new_trans->rotation);
+    *new_trans = (Trans3DModule){
+        .position = {{0.f,0.f,0.f}},
+        .scale = {{1.f,1.f,1.f}},
+        .rotation = {{0.f,0.f,0.f}},
+        .matrix = malloc_uncached(sizeof(T3DMat4FP))
+    };
     t3d_mat4fp_identity(new_trans->matrix);
 
     new_module->data = new_trans;
@@ -18,7 +20,7 @@ Module* trans3Dmodule_create() {
 }
 void trans3Dmodule_life(Module* self, float _) {
     Trans3DModule* trans_module = (Trans3DModule*)self->data;
-    t3d_mat4fp_from_srt_euler(trans_module->matrix, trans_module->scale, trans_module->rotation, trans_module->position);
+    t3d_mat4fp_from_srt_euler(trans_module->matrix, trans_module->scale.v, trans_module->rotation.v, trans_module->position.v);
 }
 void trans3Dmodule_death(Module* self) {
     Trans3DModule* trans_module = (Trans3DModule*)self->data;
@@ -30,9 +32,11 @@ Module* trans2Dmodule_create() {
     Module* new_module = module_create("Trans2D");
 
     Trans2DModule* new_trans = malloc(sizeof(Trans2DModule));
-    new_trans->position = {0f,0f,0f};
-    new_trans->scale = {1f,1f,1f};
-    new_trans->rotation = 0f;
+    *new_trans = (Trans2DModule) {
+        .position = {{0.f,0.f,0.f}},
+        .scale = {{1.f,1.f,1.f}},
+        .rotation = 0.f
+    };
 
     new_module->data = new_trans;
     new_module->death = trans2Dmodule_death;
