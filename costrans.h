@@ -11,10 +11,14 @@ typedef struct Trans3DModule Trans3DModule;
 typedef struct Trans2DModule Trans2DModule;
 
 struct Trans3DModule {
-    T3DMat4 transform;
+    T3DVec3 position;
+    T3DVec3 scale;
+    T3DQuat rotation;
+    T3DMat4FP* matrix;
 };
 
 Module* trans3Dmodule_create();
+void trans3Dmodule_life(Module* self, float delta);
 void trans3Dmodule_death(Module* self);
 
 struct Trans2DModule {
