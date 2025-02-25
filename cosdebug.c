@@ -17,8 +17,8 @@ void debug_log_init() {
     first_entry = malloc(sizeof(DebugLogEntry));
     last_entry = first_entry;
     first_entry->next_log = first_entry;
-    strcpy(first_entry->text, "LOG READY!");
     debug_log_count = 1;
+    debug_log_write("LOG READY!");
 }
 void debug_log_write(const char* text) {
     if (debug_log_count < DEBUG_LOG_ROWS) {
