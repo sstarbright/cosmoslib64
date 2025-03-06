@@ -8,7 +8,7 @@ void stage_init(Stage* stage, const char* name) {
 }
 void stage_add_actor(Stage* stage, Actor* actor, bool indexed) {
     if (stage->actor) {
-        linked_add_to_list(stage->actor->p_actor, stage->actor, actor, offsetof(Actor, p_actor), offsetof(Actor, n_actor));
+        linked_add_to_list(stage->actor->prev, stage->actor, actor, offsetof(Actor, prev), offsetof(Actor, next));
     } else {
         stage->actor = actor;
     }
@@ -23,14 +23,14 @@ void stage_life(Stage* stage, float delta) {
     do {
         if (current_actor->enabled) {
             actor_life(current_actor, delta);
-            current_actor = current_actor->n_actor;
+            current_actor = current_actor->next;
         }
     }
     while(current_actor != stage->actor);
 }
 void stage_kill(Stage* stage) {
     if (stage->actor) {
-        linked_kill_list(stage->actor, actor_simple_kill, offsetof(Actor, p_actor), offsetof(Actor, n_actor));
+        linked_kill_list(stage->actor, actor_simple_kill, offsetof(Actor, prev), offsetof(Actor, next));
     }
 
     free(stage);
@@ -43,14 +43,14 @@ void actor_init(Actor* actor, const char* name) {
     actor->stage = NULL;
     actor->enabled = true;
     actor->indexed = false;
-    actor->p_actor = actor;
-    actor->n_actor = actor;
+    actor->prev = actor;
+    actor->next = actor;
     memset(actor->module_table, 0, ACTOR_MODULETABLE_MEMSIZE);
     memset(actor->tags, 0, ACTOR_TAGTABLE_MEMSIZE);
 }
 void actor_add_module(Actor* actor, Module* module, bool indexed) {
     if (actor->module) {
-        linked_add_to_list(actor->module->p_module, actor->module, module, offsetof(Module, p_module), offsetof(Module, n_module));
+        linked_add_to_list(actor->module->prev, actor->module, module, offsetof(Module, prev), offsetof(Module, next));
     } else {
         actor->module = module;
     }
@@ -95,7 +95,7 @@ void actor_life(Actor* actor, float delta) {
     do {
         if (current_module->enabled) {
             current_module->life(current_module, delta);
-            current_module = current_module->n_module;
+            current_module = current_module->next;
         }
     }
     while(current_module != actor->module);
@@ -105,14 +105,14 @@ void actor_kill(Actor* actor) {
         hash_pop_pointer((void**)actor->stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, offsetof(Actor, name));
     }
     
-    linked_pop_from_list(actor, offsetof(Actor, p_actor), offsetof(Actor, n_actor));
+    linked_pop_from_list(actor, offsetof(Actor, prev), offsetof(Actor, next));
 
     actor_simple_kill(actor);
 }
 void actor_simple_kill(void* actor_pointer) {
     Actor* actor = (Actor*)actor_pointer;
     if (actor->module) {
-        linked_kill_list(actor->module, module_simple_kill, offsetof(Module, p_module), offsetof(Module, n_module));
+        linked_kill_list(actor->module, module_simple_kill, offsetof(Module, prev), offsetof(Module, next));
     }
 
     free(actor);
@@ -129,8 +129,8 @@ Module* module_create(const char* name) {
     new_module->life = NULL;
     new_module->inactive = NULL;
     new_module->death = NULL;
-    new_module->p_module = new_module;
-    new_module->n_module = new_module;
+    new_module->prev = new_module;
+    new_module->next = new_module;
     return new_module;
 }
 
@@ -152,7 +152,7 @@ void module_kill(Module* module) {
         hash_pop_pointer((void**)module->actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name));
     }
        
-    linked_pop_from_list(module, offsetof(Module, p_module), offsetof(Module, n_module));
+    linked_pop_from_list(module, offsetof(Module, prev), offsetof(Module, next));
     module_simple_kill(module);
 }
 void module_simple_kill(void* module_pointer) {
@@ -175,6 +175,28 @@ void module_inactive(Module* self) {
 }
 void module_death(Module* self) {
 
+}
+
+Module* renderable_module_create(const char* name) {
+    Module* new_module = module_create(name);
+    new_module->birth = renderable_module_birth;
+    new_module->death = renderable_module_death;
+    
+    RenderableModule* ren_module = malloc(sizeof(RenderableModule));
+    new_module->data = ren_module;
+    ren_module->module = module;
+    ren_module->draw = NULL;
+    return new_module;
+}
+void renderable_module_birth(Module* self) {
+    if (!((RenderableModule*)module->data)->draw)
+        ((RenderableModule*)module->data)->draw = renderable_module_draw;
+}
+void renderable_module_draw(RenderableModule* _, float __, uint32_t ___) {
+    
+}
+void renderable_module_death(Module* module) {
+    free((RenderableModule*)module->data);
 }
 
 Module* dblog_module_create(const char* name) {

@@ -18,6 +18,10 @@ typedef struct Tag Tag;
 // Has basic function pointers that may be "overloaded" for varying behaviours
 // Has a void* data block for storing data that any behaviour may need.
 typedef struct Module Module;
+// A structure that allows for different behavioural code to be called when drawing a renderable module.
+// Has a basic function pointer for draw that may be "overloaded" for varying behaviours
+// Has a void* data block for storing data that any draw behaviour may need.
+typedef struct RenderableModule RenderableModule;
 
 #ifndef STAGE_NAME_SIZE
 // Defines the size of a Stage's name.
@@ -93,9 +97,9 @@ struct Actor {
     // The hashtable that stores indexed Tags.
     Tag* tags[ACTOR_TAGTABLE_SIZE];
     // The previous Actor in the linked list.
-    Actor* p_actor;
+    Actor* prev;
     // The next Actor in the linked list.
-    Actor* n_actor;
+    Actor* next;
 };
 
 // Initialize an Actor with basic data.
@@ -142,21 +146,21 @@ struct Module {
     // A data block for storing Module-specific data.
     void* data;
     // The previous Module in the linked list.
-    Module* p_module;
+    Module* prev;
     // The next Module in the linked list.
-    Module* n_module;
+    Module* next;
 };
 
 // Create a module, initializing its members.
 Module* module_create(const char* name);
-// Initialize a module with basic functions.
+// Initialize a module with basic functions. Make sure to add to an actor before initializing, as some modules might need to check for dependency modules.
 void module_init(Module* module);
 // Kill a module.
 void module_kill(Module* module);
 // Kill a module without updating the linked list or hash table.
 void module_simple_kill(void* module_pointer);
 
-// A basic function to be called upon Module creation.
+// A basic function to be called upon Module initialization.
 void module_birth(Module* self);
 // A basic function to be called upon Module activation.
 void module_active(Module* self);
@@ -166,6 +170,24 @@ void module_life(Module* self, float delta);
 void module_inactive(Module* self);
 // A basic function to be called upon Module death.
 void module_death(Module* self);
+
+struct RenderableModule {
+    // The module that contains this Renderable.
+    Module* module;
+    // A data block for storing Module-specific data.
+    void* data;
+    // The function called when this Module is drawn.
+    void (*draw)(RenderableModule* self, float delta, uint32_t frame_buffer);
+}
+
+// Create a Renderable module, initializing its members.
+RenderableModule* renderable_module_create(const char* name);
+// A basic function to be called upon RenderableModule initialization.
+void renderable_module_birth(Module* self);
+// A basic function to be called upon Renderable Module draw.
+void renderable_module_draw(RenderableModule* module, float delta, uint32_t frame_buffer);
+// A basic function to be called upon Renderable Module death.
+void renderable_module_death(Module* module);
 
 Module* dblog_module_create();
 void dblog_module_death();
