@@ -115,7 +115,7 @@ void mesh3D_module_draw(RenderableModule* self, float _, uint32_t frame_buffer) 
 void mesh3D_module_death(Module* self) {
     Mesh3DModule* mesh_module = (Mesh3DModule*)((RenderableModule*)self->data)->data;
     rspq_block_free(mesh_module->block);
-    free(mesh_module->matrix_buffer);
+    free_uncached(mesh_module->matrix_buffer);
     mesh_module->model->uses -= 1;
     renderable_module_death(self);
 }
