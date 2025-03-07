@@ -23,7 +23,7 @@ struct Trans3DModule {
 
 Module* trans3D_module_create();
 void trans3D_add_child(Trans3DModule* parent, Trans3DModule* child);
-void trans3D_pop_child(Trans3DModule* parent, Trans3DModule* child);
+void trans3D_pop_child(Trans3DModule* child);
 void trans3D_get_matrix(Trans3DModule* module, T3DMat4* matRes);
 void trans3D_update_matrix(Trans3DModule* module);
 void trans3D_update_matrix_from_ref(Trans3DModule* module, T3DMat4* ref_mat);
@@ -35,6 +35,7 @@ struct Trans2DModule {
     T3DVec3 position;
     T3DVec3 scale;
     float rotation;
+    Module* module;
 };
 
 Module* trans2Dmodule_create();

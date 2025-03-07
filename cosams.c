@@ -18,11 +18,11 @@ void stage_add_actor(Stage* stage, Actor* actor, bool indexed) {
         }
     }
 }
-void stage_life(Stage* stage, float delta) {
+void stage_life(Stage* stage, float delta, uint32_t frame_buffer) {
     Actor* current_actor = stage->actor;
     do {
         if (current_actor->enabled) {
-            actor_life(current_actor, delta);
+            actor_life(current_actor, delta, frame_buffer);
             current_actor = current_actor->next;
         }
     }
@@ -49,22 +49,30 @@ void actor_init(Actor* actor, const char* name) {
     memset(actor->tags, 0, ACTOR_TAGTABLE_MEMSIZE);
 }
 void actor_add_module(Actor* actor, Module* module, bool indexed) {
-    if (actor->module) {
-        linked_add_to_list(actor->module->prev, actor->module, module, offsetof(Module, prev), offsetof(Module, next));
-    } else {
-        actor->module = module;
-    }
-    if (indexed) {
-        if(hash_add_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, module)) {
-            module->indexed = true;
+    if (module) {
+        if (actor->module) {
+            linked_add_to_list(actor->module->prev, actor->module, module, offsetof(Module, prev), offsetof(Module, next));
+        } else {
+            actor->module = module;
         }
+        if (indexed) {
+            if(hash_add_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, module)) {
+                module->indexed = true;
+            }
 
-        char debug_log_message[40];
-        strcpy(debug_log_message, "Index failure on Actor '");
-        strcpy(debug_log_message, actor->name);
-        strcpy(debug_log_message, "'.");
-        debug_log_write(debug_log_message);
+            char debug_log_message[40];
+            strcpy(debug_log_message, "Index failure on Actor '");
+            strcpy(debug_log_message, actor->name);
+            strcpy(debug_log_message, "'.");
+            debug_log_write(debug_log_message);
+        }
     }
+}
+Module* actor_get_indexed_module(Actor* actor, const char* name) {
+    int found_module = hash_get_pointer((void**)actor->module_table, ACTOR_MODULETABLE_MEMSIZE, name, offsetof(Module, name));
+    if (found_module >= 0)
+        return actor->module_table[found_module];
+    return NULL;
 }
 bool actor_add_tag(Actor* actor, const char* tag) {
     Tag* new_tag = malloc(sizeof(Tag));
@@ -90,11 +98,11 @@ void actor_pop_tag(Actor* actor, const char* tag) {
     if (pop_tag)
         free(pop_tag);
 }
-void actor_life(Actor* actor, float delta) {
+void actor_life(Actor* actor, float delta, uint32_t frame_buffer) {
     Module* current_module = actor->module;
     do {
         if (current_module->enabled) {
-            current_module->life(current_module, delta);
+            current_module->life(current_module, delta, frame_buffer);
             current_module = current_module->next;
         }
     }
@@ -161,19 +169,19 @@ void module_simple_kill(void* module_pointer) {
     free(module);
 }
 
-void module_birth(Module* self) {
+void module_birth(Module* _) {
 
 }
 void module_active(Module* self) {
     self->enabled = true;
 }
-void module_life(Module* self, float delta) {
+void module_life(Module* self, float delta, uint32_t frame_buffer) {
 
 }
 void module_inactive(Module* self) {
     self->enabled = false;
 }
-void module_death(Module* self) {
+void module_death(Module* _) {
 
 }
 
@@ -184,13 +192,13 @@ Module* renderable_module_create(const char* name) {
     
     RenderableModule* ren_module = malloc(sizeof(RenderableModule));
     new_module->data = ren_module;
-    ren_module->module = module;
+    ren_module->module = new_module;
     ren_module->draw = NULL;
     return new_module;
 }
 void renderable_module_birth(Module* self) {
-    if (!((RenderableModule*)module->data)->draw)
-        ((RenderableModule*)module->data)->draw = renderable_module_draw;
+    if (!((RenderableModule*)self->data)->draw)
+        ((RenderableModule*)self->data)->draw = renderable_module_draw;
 }
 void renderable_module_draw(RenderableModule* _, float __, uint32_t ___) {
     

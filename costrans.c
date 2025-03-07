@@ -20,7 +20,6 @@ Module* trans3D_module_create() {
     new_module->data = new_trans;
     new_module->life = trans3D_module_life;
     new_module->death = trans3D_module_death;
-    module_init(new_module);
     return new_module;
 }
 void trans3D_add_child(Trans3DModule* parent, Trans3DModule* child) {
@@ -48,7 +47,7 @@ void trans3D_get_matrix(Trans3DModule* module, T3DMat4* matRes) {
     else
         t3d_mat4_identity(&parent_mat);
     t3d_mat4_from_srt_euler(&local_mat, module->scale.v, module->rotation.v, module->position.v);
-    t3d_mat4_mul(&matRes, &parent_mat, &local_mat);
+    t3d_mat4_mul(matRes, &parent_mat, &local_mat);
 }
 void trans3D_update_matrix(Trans3DModule* module) {
     T3DMat4 parent_mat;
@@ -62,7 +61,7 @@ void trans3D_update_matrix_from_ref(Trans3DModule* module, T3DMat4* parent_mat) 
     T3DMat4 local_mat;
     T3DMat4 global_mat;
     t3d_mat4_from_srt_euler(&local_mat, module->scale.v, module->rotation.v, module->position.v);
-    t3d_mat4_mul(&global_mat, &parent_mat, &local_mat);
+    t3d_mat4_mul(&global_mat, parent_mat, &local_mat);
 
     Trans3DModule* start_child_module = module->child;
     if (start_child_module) {
@@ -84,7 +83,7 @@ void trans3D_module_life(Module* self, float _) {
 }
 void trans3D_module_death(Module* self) {
     Trans3DModule* trans_module = (Trans3DModule*)self->data;
-    trans3D_pop_child(self);
+    trans3D_pop_child(trans_module);
 
     free_uncached(trans_module->matrix);
     free(trans_module);
@@ -97,12 +96,12 @@ Module* trans2Dmodule_create() {
     *new_trans = (Trans2DModule) {
         .position = {{0.f,0.f,0.f}},
         .scale = {{1.f,1.f,1.f}},
-        .rotation = 0.f
+        .rotation = 0.f,
+        .module = new_module
     };
 
     new_module->data = new_trans;
     new_module->death = trans2Dmodule_death;
-    module_init(new_module);
     return new_module;
 }
 void trans2Dmodule_death(Module* self) {

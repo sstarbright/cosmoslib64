@@ -18,7 +18,6 @@
 typedef struct CachedModel CachedModel;
 typedef struct CachedSModel CachedSModel;
 typedef struct Mesh3DModule Mesh3DModule;
-typedef struct SMesh3DModule SMesh3DModule;
 
 struct CachedModel {
     T3DModel* model;
@@ -28,29 +27,22 @@ struct CachedModel {
 
 void cosmesh_init();
 void model_cache_create(uint32_t size);
+CachedModel* load_model_into_cache(const char* location, const char* name);
 void model_cache_clear();
 
 struct Mesh3DModule {
     Trans3DModule* transform;
     T3DMat4FP* matrix_buffer;
-    T3DModel* model;
+    CachedModel* model;
     rspq_block_t* block;
+    Module* module;
+    uint32_t frame_buffer;
 };
 
 Module* mesh3D_module_create(const char* name);
-void mesh3D_module_birth(Module* self)
-void mesh3D_module_draw(Module* self, float delta, uint32_t frame_buffer);
+void mesh3D_module_birth(Module* self);
+void mesh3D_module_life(Module* self, float delta, uint32_t frame_buffer);
+void mesh3D_module_draw(RenderableModule* self, float delta, uint32_t frame_buffer);
 void mesh3D_module_death(Module* self);
-
-struct SMesh3DModule {
-    Trans3DModule* transform;
-    T3DMat4FP* matrix_buffer;
-    T3DModel* model;
-    rspq_block_t* block;
-};
-
-Module* smesh3D_module_create();
-void smesh3D_module_draw(Module* self, float delta, uint32_t frame_buffer);
-void smesh3D_module_death(Module* self);
 
 #endif

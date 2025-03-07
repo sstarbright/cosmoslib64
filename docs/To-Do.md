@@ -18,3 +18,5 @@
 
 ## coscam (Camera Modules for cosams)
 - Implement Cameras for cosams
+
+## coshit (Collision Modules for cosams)
