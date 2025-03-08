@@ -18,11 +18,11 @@ void stage_add_actor(Stage* stage, Actor* actor, bool indexed) {
         }
     }
 }
-void stage_life(Stage* stage, float delta, uint32_t frame_buffer) {
+void stage_life(Stage* stage, float delta) {
     Actor* current_actor = stage->actor;
     do {
         if (current_actor->enabled) {
-            actor_life(current_actor, delta, frame_buffer);
+            actor_life(current_actor, delta);
             current_actor = current_actor->next;
         }
     }
@@ -63,9 +63,10 @@ void actor_add_module(Actor* actor, Module* module, bool indexed) {
             char debug_log_message[40];
             strcpy(debug_log_message, "Index failure on Actor '");
             strcpy(debug_log_message, actor->name);
-            strcpy(debug_log_message, "'.");
-            debug_log_write(debug_log_message);
+            strcpy(debug_log_message, "'.\n");
+            debugf(debug_log_message);
         }
+        module->actor = actor;
     }
 }
 Module* actor_get_indexed_module(Actor* actor, const char* name) {
@@ -84,8 +85,8 @@ bool actor_add_tag(Actor* actor, const char* tag) {
     char debug_log_message[40];
     strcpy(debug_log_message, "Tag failure on Actor '");
     strcpy(debug_log_message, actor->name);
-    strcpy(debug_log_message, "'.");
-    debug_log_write(debug_log_message);
+    strcpy(debug_log_message, "'.\n");
+    debugf(debug_log_message);
     free(new_tag);
     return false;
 }
@@ -98,11 +99,11 @@ void actor_pop_tag(Actor* actor, const char* tag) {
     if (pop_tag)
         free(pop_tag);
 }
-void actor_life(Actor* actor, float delta, uint32_t frame_buffer) {
+void actor_life(Actor* actor, float delta) {
     Module* current_module = actor->module;
     do {
         if (current_module->enabled) {
-            current_module->life(current_module, delta, frame_buffer);
+            current_module->life(current_module, delta);
             current_module = current_module->next;
         }
     }
@@ -175,7 +176,7 @@ void module_birth(Module* _) {
 void module_active(Module* self) {
     self->enabled = true;
 }
-void module_life(Module* self, float delta, uint32_t frame_buffer) {
+void module_life(Module* self, float delta) {
 
 }
 void module_inactive(Module* self) {
@@ -216,6 +217,6 @@ Module* dblog_module_create(const char* name) {
 void dblog_module_death(Module* self) {
     char text[30];
     strcpy(text, self->name);
-    strcat(text, " DEATH");
-    debug_log_write(text);
+    strcat(text, " DEATH\n");
+    debugf(text);
 }

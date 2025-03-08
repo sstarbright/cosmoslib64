@@ -11,6 +11,7 @@ Module* trans3D_module_create() {
         .matrix = malloc_uncached(sizeof(T3DMat4FP))
     };
     t3d_mat4fp_identity(new_trans->matrix);
+
     new_trans->parent = NULL;
     new_trans->child = NULL;
     new_trans->module = new_module;
@@ -18,7 +19,6 @@ Module* trans3D_module_create() {
     new_trans->next = new_trans;
 
     new_module->data = new_trans;
-    new_module->life = trans3D_module_life;
     new_module->death = trans3D_module_death;
     return new_module;
 }
@@ -74,12 +74,6 @@ void trans3D_update_matrix_from_ref(Trans3DModule* module, T3DMat4* parent_mat) 
     }
 
     t3d_mat4_to_fixed(module->matrix, &global_mat);
-}
-
-void trans3D_module_life(Module* self, float _) {
-    Trans3DModule* trans_module = (Trans3DModule*)self->data;
-
-    t3d_mat4fp_from_srt_euler(trans_module->matrix, trans_module->scale.v, trans_module->rotation.v, trans_module->position.v);
 }
 void trans3D_module_death(Module* self) {
     Trans3DModule* trans_module = (Trans3DModule*)self->data;

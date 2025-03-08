@@ -49,7 +49,7 @@ void stage_init(Stage* stage, const char* name);
 // Add an Actor to this Stage's linked list (and hash table if indexed)
 void stage_add_actor(Stage* stage, Actor* actor, bool indexed);
 // Update a Stage and its Actors.
-void stage_life(Stage* self, float delta, uint32_t frame_buffer);
+void stage_life(Stage* self, float delta);
 // Kill a Stage and its Actors.
 void stage_kill(Stage* stage);
 
@@ -115,7 +115,7 @@ bool actor_has_tag(Actor* actor, const char* tag);
 // Remove a tag from this actor's tag table.
 void actor_pop_tag(Actor* actor, const char* tag);
 // Update an Actor and its Modules.
-void actor_life(Actor* actor, float delta, uint32_t frame_buffer);
+void actor_life(Actor* actor, float delta);
 // Kill an Actor and its Modules.
 void actor_kill(Actor* actor);
 // Kill an Actor and its Modules, without updating the linked list or hash table.
@@ -140,7 +140,7 @@ struct Module {
     // The function called when this Module is activated.
     void (*active)(Module* self);
     // The function called when this Module is updated.
-    void (*life)(Module* self, float delta, uint32_t frame_buffer);
+    void (*life)(Module* self, float delta);
     // The function called when this Module is deactivated.
     void (*inactive)(Module* self);
     // The function called when this Module is killed.
@@ -167,7 +167,7 @@ void module_birth(Module* self);
 // A basic function to be called upon Module activation.
 void module_active(Module* self);
 // A basic function to be called upon Module update.
-void module_life(Module* self, float delta, uint32_t frame_buffer);
+void module_life(Module* self, float delta);
 // A basic function to be called upon Module deactivation.
 void module_inactive(Module* self);
 // A basic function to be called upon Module death.

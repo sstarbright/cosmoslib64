@@ -41,7 +41,6 @@ struct Mesh3DModule {
 
 Module* mesh3D_module_create(const char* name);
 void mesh3D_module_birth(Module* self);
-void mesh3D_module_life(Module* self, float delta, uint32_t frame_buffer);
 void mesh3D_module_draw(RenderableModule* self, float delta, uint32_t frame_buffer);
 void mesh3D_module_death(Module* self);
 

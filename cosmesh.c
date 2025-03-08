@@ -26,14 +26,14 @@ CachedModel* load_model_into_cache(const char* location, const char* name) {
         char debug_log_message[40];
         strcpy(debug_log_message, "Cache failure on Model '");
         strcpy(debug_log_message, name);
-        strcpy(debug_log_message, "'.");
-        debug_log_write(debug_log_message);
+        strcpy(debug_log_message, "'.\n");
+        debugf(debug_log_message);
         free(cached_model);
         return NULL;
     }
     char debug_log_message[40];
-    strcpy(debug_log_message, "Cache is uninitialized.");
-    debug_log_write(debug_log_message);
+    strcpy(debug_log_message, "Cache is uninitialized.\n");
+    debugf(debug_log_message);
     return NULL;
 }
 
@@ -58,7 +58,6 @@ Module* mesh3D_module_create(const char* name) {
         if (found_cache >= 0) {
             Module* new_module = renderable_module_create("Mesh3D");
             new_module->birth = mesh3D_module_birth;
-            new_module->life = mesh3D_module_life;
             new_module->death = mesh3D_module_death;
     
             RenderableModule* ren_module = (RenderableModule*)new_module->data;
@@ -87,27 +86,20 @@ Module* mesh3D_module_create(const char* name) {
 }
 void mesh3D_module_birth(Module* self) {
     renderable_module_birth(self);
-
     if (self->actor) {
         Mesh3DModule* mesh_module = (Mesh3DModule*)((RenderableModule*)self->data)->data;
-
-        Module* trans_module = actor_get_indexed_module(self->actor, "Trans3D");
-        if (!trans_module) {
-            trans_module = trans3D_module_create();
-            actor_add_module(self->actor, trans_module, false);
-            module_init(trans_module);
-        }
+        
+        Module* trans_module = trans3D_module_create();
+            
+        actor_add_module(self->actor, trans_module, true);
+        module_init(trans_module);
         mesh_module->transform = (Trans3DModule*)trans_module->data;
     }
-}
-void mesh3D_module_life(Module* self, float _, uint32_t frame_buffer) {
-    Mesh3DModule* mesh_module = (Mesh3DModule*)self->data;
-    //t3d_mat4fp_from_srt_euler(&mesh_module->matrix_buffer[frame_buffer], mesh_module->transform->scale.v, mesh_module->transform->rotation.v, mesh_module->transform->position.v);
-    //memcpy(&mesh_module->matrix_buffer[frame_buffer], mesh_module->transform->matrix, sizeof(T3DMat4FP));
 }
 void mesh3D_module_draw(RenderableModule* self, float _, uint32_t frame_buffer) {
     Mesh3DModule* mesh_module = (Mesh3DModule*)self->data;
     if (mesh_module->block) {
+        memcpy(&mesh_module->matrix_buffer[frame_buffer], mesh_module->transform->matrix, sizeof(T3DMat4FP));
         t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
         rspq_block_run(mesh_module->block);
     }
