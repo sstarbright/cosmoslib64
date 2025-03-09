@@ -1,26 +1,26 @@
 #include "costrans.h"
 
-Module* trans3D_module_create() {
-    Module* new_module = module_create("Trans3D");
+void trans3D_module_create(Trans3DModule* module, const char* name) {
+    module_create((Module*)module, name);
+    ((Module*)module)->death = trans3D_module_death;
 
-    Trans3DModule* new_trans = malloc(sizeof(Trans3DModule));
-    *new_trans = (Trans3DModule){
-        .position = {{0.f,0.f,0.f}},
-        .scale = {{1.f,1.f,1.f}},
-        .rotation = {{0.f,0.f,0.f}},
-        .matrix = malloc_uncached(sizeof(T3DMat4FP))
-    };
-    t3d_mat4fp_identity(new_trans->matrix);
+    module->position.x = 0.f;
+    module->position.y = 0.f;
+    module->position.z = 0.f;
+    module->scale.x = 1.f;
+    module->scale.y = 1.f;
+    module->scale.z = 1.f;
+    module->rotation.x = 0.f;
+    module->rotation.y = 0.f;
+    module->rotation.z = 0.f;
 
-    new_trans->parent = NULL;
-    new_trans->child = NULL;
-    new_trans->module = new_module;
-    new_trans->prev = new_trans;
-    new_trans->next = new_trans;
+    module->matrix = malloc_uncached(sizeof(T3DMat4FP));
+    t3d_mat4fp_identity(module->matrix);
 
-    new_module->data = new_trans;
-    new_module->death = trans3D_module_death;
-    return new_module;
+    module->parent = NULL;
+    module->child = NULL;
+    module->prev = module;
+    module->next = module;
 }
 void trans3D_add_child(Trans3DModule* parent, Trans3DModule* child) {
     if (parent->child) {
@@ -76,29 +76,19 @@ void trans3D_update_matrix_from_ref(Trans3DModule* module, T3DMat4* parent_mat) 
     t3d_mat4_to_fixed(module->matrix, &global_mat);
 }
 void trans3D_module_death(Module* self) {
-    Trans3DModule* trans_module = (Trans3DModule*)self->data;
-    trans3D_pop_child(trans_module);
+    trans3D_pop_child((Trans3DModule*)self);
 
-    free_uncached(trans_module->matrix);
-    free(trans_module);
+    free_uncached(((Trans3DModule*)self)->matrix);
 }
 
-Module* trans2Dmodule_create() {
-    Module* new_module = module_create("Trans2D");
+void trans2Dmodule_create(Trans2DModule* module, const char* name) {
+    module_create((Module*)module, name);
 
-    Trans2DModule* new_trans = malloc(sizeof(Trans2DModule));
-    *new_trans = (Trans2DModule) {
-        .position = {{0.f,0.f,0.f}},
-        .scale = {{1.f,1.f,1.f}},
-        .rotation = 0.f,
-        .module = new_module
-    };
-
-    new_module->data = new_trans;
-    new_module->death = trans2Dmodule_death;
-    return new_module;
-}
-void trans2Dmodule_death(Module* self) {
-    Trans2DModule* trans_module = (Trans2DModule*)self->data;
-    free(trans_module);
+    module->position.x = 0.f;
+    module->position.y = 0.f;
+    module->position.z = 0.f;
+    module->scale.x = 1.f;
+    module->scale.y = 1.f;
+    module->scale.z = 1.f;
+    module->rotation = 0.f;
 }

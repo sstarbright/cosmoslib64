@@ -6,6 +6,7 @@
 - Consider a way to optimize hash tables
     - Could involve calculating hashes based on a seed, then optimizing for specific seeds for each Actor's modules and tags
     - Reroll seed until zero collisions are detected
+- Fix hashed module querying
 
 ## costrans (Transform Modules for cosams)
 

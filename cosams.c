@@ -127,20 +127,18 @@ void actor_simple_kill(void* actor_pointer) {
     free(actor);
 }
 
-Module* module_create(const char* name) {
-    Module* new_module = malloc(sizeof(Module));
-    strcpy(new_module->name, name);
-    new_module->enabled = true;
-    new_module->indexed = false;
-    new_module->actor = NULL;
-    new_module->birth = NULL;
-    new_module->active = NULL;
-    new_module->life = NULL;
-    new_module->inactive = NULL;
-    new_module->death = NULL;
-    new_module->prev = new_module;
-    new_module->next = new_module;
-    return new_module;
+void module_create(Module* module, const char* name) {
+    strcpy(module->name, name);
+    module->enabled = true;
+    module->indexed = false;
+    module->actor = NULL;
+    module->birth = NULL;
+    module->active = NULL;
+    module->life = NULL;
+    module->inactive = NULL;
+    module->death = NULL;
+    module->prev = module;
+    module->next = module;
 }
 
 void module_init(Module* module) {
@@ -184,39 +182,4 @@ void module_inactive(Module* self) {
 }
 void module_death(Module* _) {
 
-}
-
-Module* renderable_module_create(const char* name) {
-    Module* new_module = module_create(name);
-    new_module->birth = renderable_module_birth;
-    new_module->death = renderable_module_death;
-    
-    RenderableModule* ren_module = malloc(sizeof(RenderableModule));
-    new_module->data = ren_module;
-    ren_module->module = new_module;
-    ren_module->draw = NULL;
-    return new_module;
-}
-void renderable_module_birth(Module* self) {
-    if (!((RenderableModule*)self->data)->draw)
-        ((RenderableModule*)self->data)->draw = renderable_module_draw;
-}
-void renderable_module_draw(RenderableModule* _, float __, uint32_t ___) {
-    
-}
-void renderable_module_death(Module* module) {
-    free((RenderableModule*)module->data);
-}
-
-Module* dblog_module_create(const char* name) {
-    Module* new_module = module_create(name);
-    new_module->death = dblog_module_death;
-    module_init(new_module);
-    return new_module;
-}
-void dblog_module_death(Module* self) {
-    char text[30];
-    strcpy(text, self->name);
-    strcat(text, " DEATH\n");
-    debugf(text);
 }
