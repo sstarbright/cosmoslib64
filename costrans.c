@@ -100,8 +100,9 @@ void trans2D_module_create(Trans2DModule* module, const char* name) {
 }
 void trans2D_module_death(Module* self) {
     trans2D_simple_module_death((Trans2DModule*)self);
+    
     free((Trans2DModule*)self);
 }
 void trans2D_simple_module_death(Trans2DModule* module) {
-    
+
 }

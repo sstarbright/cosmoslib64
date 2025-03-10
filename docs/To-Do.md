@@ -14,8 +14,8 @@
 - Implement Lights as Module for cosams
 
 ## cosmesh (Mesh Modules for cosams)
-- Finish Tiny3D Mesh implementation
 - Implement Skinned Mesh for cosams
+- Primitive Color Module to alter color of model before rendering it
 
 ## coscam (Camera Modules for cosams)
 - Implement Cameras for cosams
