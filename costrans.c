@@ -76,9 +76,13 @@ void trans3D_update_matrix_from_ref(Trans3DModule* module, T3DMat4* parent_mat) 
     t3d_mat4_to_fixed(module->matrix, &global_mat);
 }
 void trans3D_module_death(Module* self) {
-    trans3D_pop_child((Trans3DModule*)self);
+    trans3D_simple_module_death((Trans3DModule*)self);
+    free((Trans3DModule*)self);
+}
+void trans3D_simple_module_death(Trans3DModule* module) {
+    trans3D_pop_child((Trans3DModule*)module);
 
-    free_uncached(((Trans3DModule*)self)->matrix);
+    free_uncached(((Trans3DModule*)module)->matrix);
 }
 
 void trans2Dmodule_create(Trans2DModule* module, const char* name) {

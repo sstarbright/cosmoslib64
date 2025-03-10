@@ -165,7 +165,6 @@ void module_kill(Module* module) {
 void module_simple_kill(void* module_pointer) {
     Module* module = (Module*)module_pointer;
     module->death(module);
-    free(module);
 }
 
 void module_birth(Module* _) {
@@ -180,6 +179,6 @@ void module_life(Module* self, float delta) {
 void module_inactive(Module* self) {
     self->enabled = false;
 }
-void module_death(Module* _) {
-
+void module_death(Module* module) {
+    free(module);
 }

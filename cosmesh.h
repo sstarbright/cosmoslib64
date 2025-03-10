@@ -46,8 +46,6 @@ void render3d_module_create(Render3DModule* module, const char* name);
 void render3d_module_birth(Module* self);
 // A basic function to be called upon Render3DModule draw.
 void render3d_module_draw(Render3DModule* module, float delta, uint32_t frame_buffer);
-// A basic function to be called upon Render3DModule death.
-void render3d_module_death(Module* module);
 
 struct Mesh3DModule {
     Render3DModule render;
@@ -61,5 +59,6 @@ void mesh3D_module_create(Mesh3DModule* module, const char* name);
 void mesh3D_module_birth(Module* self);
 void mesh3D_module_draw(Render3DModule* self, float delta, uint32_t frame_buffer);
 void mesh3D_module_death(Module* self);
+void mesh3D_simple_module_death(Mesh3DModule* self);
 
 #endif

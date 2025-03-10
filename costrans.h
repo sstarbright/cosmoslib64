@@ -29,6 +29,7 @@ void trans3D_update_matrix(Trans3DModule* module);
 void trans3D_update_matrix_from_ref(Trans3DModule* module, T3DMat4* ref_mat);
 
 void trans3D_module_death(Module* self);
+void trans3D_simple_module_death(Trans3DModule* module);
 
 struct Trans2DModule {
     Module module;
