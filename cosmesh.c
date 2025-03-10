@@ -56,6 +56,7 @@ void model_cache_clear() {
 void render3d_module_create(Render3DModule* module, const char* name) {
     trans3D_module_create((Trans3DModule*)module, name);
     ((Module*)module)->birth = render3d_module_birth;
+    ((Module*)module)->death = render3d_module_death;
 
     module->draw = NULL;
 }
@@ -65,6 +66,10 @@ void render3d_module_birth(Module* self) {
 }
 void render3d_module_draw(Render3DModule* _, float __, uint32_t ___) {
     
+}
+void render3d_module_death(Module* self) {
+    trans3D_simple_module_death((Trans3DModule*)self);
+    free((Render3DModule*)self);
 }
 
 void mesh3D_module_create(Mesh3DModule* module, const char* name) {
@@ -113,9 +118,9 @@ void mesh3D_module_death(Module* self) {
     free((Mesh3DModule*)self);
 }
 void mesh3D_simple_module_death(Mesh3DModule* self) {
+    trans3D_simple_module_death((Trans3DModule*)self);
+
     rspq_block_free(self->block);
     free_uncached(self->matrix_buffer);
     self->model->uses -= 1;
-    
-    trans3D_simple_module_death((Trans3DModule*)self);
 }

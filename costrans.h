@@ -38,6 +38,8 @@ struct Trans2DModule {
     float rotation;
 };
 
-void trans2Dmodule_create(Trans2DModule* module, const char* name);
+void trans2D_module_create(Trans2DModule* module, const char* name);
+void trans2D_module_death(Module* self);
+void trans2D_simple_module_death(Trans2DModule* module);
 
 #endif
