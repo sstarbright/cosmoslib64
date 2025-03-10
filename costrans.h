@@ -14,6 +14,7 @@ struct Trans3DModule {
     T3DVec3 position;
     T3DVec3 scale;
     T3DVec3 rotation;
+    T3DMat4 matrixf;
     T3DMat4FP* matrix;
     Trans3DModule* parent;
     Trans3DModule* child;
