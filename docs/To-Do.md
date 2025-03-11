@@ -1,12 +1,10 @@
 # Cosmos64 - TODO...
 
 ## costrans (Transform Modules for cosams)
-- Implement matup (matrix update) function pointer (Trans3DModule* self, float delta_time, T3DMat4* matrix);
 
 ## coscam (Camera Modules for cosams)
-- Use Trans3DModule->matup to call code to invert the received matrix
 
-## coslites (Lighting Modules for cosams)
+## coslite (Lighting Modules for cosams)
 - Implement Lights as Module for cosams
 - Directional Lights
     - Use Trans3DModule->matup to call code to copy the first three entries of column 2 of the matrix.

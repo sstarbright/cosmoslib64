@@ -3,6 +3,7 @@
 void trans3d_module_create(Trans3DModule* module, const char* name) {
     module_create((Module*)module, name);
     ((Module*)module)->death = trans3d_module_death;
+    module->matup = trans3d_module_matup;
 
     module->position.x = 0.f;
     module->position.y = 0.f;
@@ -16,7 +17,6 @@ void trans3d_module_create(Trans3DModule* module, const char* name) {
 
     module->matrix = malloc_uncached(sizeof(T3DMat4FP));
     t3d_mat4fp_identity(module->matrix);
-    t3d_mat4_identity(&module->inv_matrix);
 
     module->parent = NULL;
     module->child = NULL;
@@ -73,10 +73,13 @@ void trans3d_update_matrix_from_ref(Trans3DModule* module, T3DMat4* parent_mat) 
             child_module = child_module->next;
         }
     }
-    //memcpy(&module->matrixf, &global_mat, sizeof(T3DMat4));
-    fm_mat4_inverse(&module->inv_matrix, &global_mat);
+    module->matup(module, &global_mat);
     t3d_mat4_to_fixed(module->matrix, &global_mat);
 }
+void trans3d_module_matup(Trans3DModule* self, const T3DMat4* global_mat) {
+
+}
+
 void trans3d_module_death(Module* self) {
     trans3d_simple_module_death((Trans3DModule*)self);
     

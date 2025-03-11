@@ -20,6 +20,7 @@ void camera3d_module_create(Camera3DModule* module, const char* name);
 // A basic function to be called upon Camera3DModule initialization.
 void camera3d_module_birth(Module* self);
 void camera3d_module_life(Module* self, float delta);
+void camera3d_module_matup(Trans3DModule* self, const T3DMat4* global_mat);
 // A basic function to be called upon Camera3DModule draw.
 void camera3d_module_draw(Render3DModule* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Camera3DModule death.

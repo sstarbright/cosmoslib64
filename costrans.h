@@ -14,12 +14,12 @@ struct Trans3DModule {
     T3DVec3 position;
     T3DVec3 scale;
     T3DVec3 rotation;
-    T3DMat4 inv_matrix;
     T3DMat4FP* matrix;
     Trans3DModule* parent;
     Trans3DModule* child;
     Trans3DModule* prev;
     Trans3DModule* next;
+    void (*matup)(Trans3DModule* self, const T3DMat4* global_mat);
 };
 
 void trans3d_module_create(Trans3DModule* module, const char* name);
@@ -28,6 +28,7 @@ void trans3d_pop_child(Trans3DModule* child);
 void trans3d_get_matrix(Trans3DModule* module, T3DMat4* matRes);
 void trans3d_update_matrix(Trans3DModule* module);
 void trans3d_update_matrix_from_ref(Trans3DModule* module, T3DMat4* ref_mat);
+void trans3d_module_matup(Trans3DModule* self, const T3DMat4* global_mat);
 
 void trans3d_module_death(Module* self);
 void trans3d_simple_module_death(Trans3DModule* module);

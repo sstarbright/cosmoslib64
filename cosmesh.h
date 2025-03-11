@@ -36,6 +36,8 @@ void model_cache_clear();
 struct Render3DModule {
     // The 3D transform of this Render3D module.
     Trans3DModule transform;
+    // The output color of this Render3D module.
+    color_t color;
     // The function called when this Module is drawn.
     void (*draw)(Render3DModule* self, float delta, uint32_t frame_buffer);
 };
