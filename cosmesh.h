@@ -57,10 +57,10 @@ struct Mesh3DModule {
     uint32_t frame_buffer;
 };
 
-void mesh3D_module_create(Mesh3DModule* module, const char* name);
-void mesh3D_module_birth(Module* self);
-void mesh3D_module_draw(Render3DModule* self, float delta, uint32_t frame_buffer);
-void mesh3D_module_death(Module* self);
-void mesh3D_simple_module_death(Mesh3DModule* self);
+void mesh3d_module_create(Mesh3DModule* module, const char* name);
+void mesh3d_module_birth(Module* self);
+void mesh3d_module_draw(Render3DModule* self, float delta, uint32_t frame_buffer);
+void mesh3d_module_death(Module* self);
+void mesh3d_simple_module_death(Mesh3DModule* self);
 
 #endif
