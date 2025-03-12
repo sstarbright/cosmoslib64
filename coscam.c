@@ -4,7 +4,6 @@
 void camera3d_module_create(Camera3DModule* module, const char* name) {
     render3d_module_create((Render3DModule*)module, name);
 
-    ((Module*)module)->birth = camera3d_module_birth;
     ((Module*)module)->life = camera3d_module_life;
     ((Module*)module)->death = camera3d_module_death;
 
@@ -16,9 +15,6 @@ void camera3d_module_create(Camera3DModule* module, const char* name) {
     module->near = 10.f;
     module->far = 150.f;
     t3d_mat4_identity(&module->matrix);
-}
-void camera3d_module_birth(Module* self) {
-    render3d_module_birth(self);
 }
 void camera3d_module_life(Module* self, float delta) {
     t3d_viewport_set_projection(&((Camera3DModule*)self)->viewport, ((Camera3DModule*)self)->fov, ((Camera3DModule*)self)->near, ((Camera3DModule*)self)->far);

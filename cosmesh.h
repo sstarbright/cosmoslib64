@@ -44,8 +44,6 @@ struct Render3DModule {
 
 // Create a Render3D module, initializing its members.
 void render3d_module_create(Render3DModule* module, const char* name);
-// A basic function to be called upon Render3DModule initialization.
-void render3d_module_birth(Module* self);
 // A basic function to be called upon Render3DModule draw.
 void render3d_module_draw(Render3DModule* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Render3DModule death.
@@ -60,7 +58,6 @@ struct Mesh3DModule {
 };
 
 void mesh3d_module_create(Mesh3DModule* module, const char* name);
-void mesh3d_module_birth(Module* self);
 void mesh3d_module_draw(Render3DModule* self, float delta, uint32_t frame_buffer);
 void mesh3d_module_death(Module* self);
 void mesh3d_simple_module_death(Mesh3DModule* self);

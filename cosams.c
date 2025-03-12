@@ -132,27 +132,12 @@ void module_create(Module* module, const char* name) {
     module->enabled = true;
     module->indexed = false;
     module->actor = NULL;
-    module->birth = NULL;
-    module->active = NULL;
-    module->life = NULL;
-    module->inactive = NULL;
-    module->death = NULL;
+    module->active = module_active;
+    module->life = module_life;
+    module->inactive = module_inactive;
+    module->death = module_death;
     module->prev = module;
     module->next = module;
-}
-
-void module_init(Module* module) {
-    if (!module->birth)
-        module->birth = module_birth;
-    if (!module->active)
-        module->active = module_active;
-    if (!module->life)
-        module->life = module_life;
-    if (!module->inactive)
-        module->inactive = module_inactive;
-    if (!module->death)
-        module->death = module_death;
-    module->birth(module);
 }
 void module_kill(Module* module) {
     if (module->actor && module->indexed) {
@@ -167,9 +152,6 @@ void module_simple_kill(void* module_pointer) {
     module->death(module);
 }
 
-void module_birth(Module* _) {
-
-}
 void module_active(Module* self) {
     self->enabled = true;
 }

@@ -130,8 +130,6 @@ struct Module {
     bool enabled;
     // Is this Module indexed on Actor?
     bool indexed;
-    // The function called when this Module is created.
-    void (*birth)(Module* self);
     // The function called when this Module is activated.
     void (*active)(Module* self);
     // The function called when this Module is updated.
@@ -148,15 +146,11 @@ struct Module {
 
 // Create a module, initializing its members.
 void module_create(Module* module, const char* name);
-// Initialize a module with basic functions. Make sure to add to an actor before initializing, as some modules might need to check for dependency modules.
-void module_init(Module* module);
 // Kill a module.
 void module_kill(Module* module);
 // Kill a module without updating the linked list or hash table.
 void module_simple_kill(void* module_pointer);
 
-// A basic function to be called upon Module initialization.
-void module_birth(Module* self);
 // A basic function to be called upon Module activation.
 void module_active(Module* self);
 // A basic function to be called upon Module update.

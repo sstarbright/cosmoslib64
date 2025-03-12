@@ -55,14 +55,10 @@ void model_cache_clear() {
 
 void render3d_module_create(Render3DModule* module, const char* name) {
     trans3d_module_create((Trans3DModule*)module, name);
-    ((Module*)module)->birth = render3d_module_birth;
     ((Module*)module)->death = render3d_module_death;
 
-    module->draw = NULL;
-}
-void render3d_module_birth(Module* self) {
-    if (!((Render3DModule*)self)->draw)
-        ((Render3DModule*)self)->draw = render3d_module_draw;
+    module->color = (color_t){0xFF, 0xFF, 0xFF, 0xFF};
+    module->draw = render3d_module_draw;
 }
 void render3d_module_draw(Render3DModule* _, float __, uint32_t ___) {
     
@@ -77,10 +73,9 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name) {
         int found_cache = hash_get_pointer((void**)model_cache, model_cache_size, name, offsetof(CachedModel, name));
         if (found_cache >= 0) {
             render3d_module_create((Render3DModule*)module, name);
-            ((Module*)module)->birth = mesh3d_module_birth;
-            ((Module*)module)->death = mesh3d_module_death;
-    
+            
             ((Render3DModule*)module)->draw = mesh3d_module_draw;
+            ((Module*)module)->death = mesh3d_module_death;
 
             module->model = model_cache[found_cache];
             model_cache[found_cache]->uses += 1;
@@ -95,14 +90,15 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name) {
                 t3d_matrix_pop(1);
             module->block = rspq_block_end();
         } else {
-            // Set error model?
+            free(module);
+            module = NULL;
+            // Maybe switch this to an error model?
         }
     } else {
-        // Set error model?
+        free(module);
+        module = NULL;
+        // Maybe switch this to an error model?
     }
-}
-void mesh3d_module_birth(Module* self) {
-    render3d_module_birth(self);
 }
 void mesh3d_module_draw(Render3DModule* self, float _, uint32_t frame_buffer) {
     Mesh3DModule* mesh_module = (Mesh3DModule*)self;
