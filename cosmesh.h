@@ -14,9 +14,23 @@
 // Defines the size of a CachedModel's name
 #define MODEL_CACHE_NAME_SIZE 50
 #endif
+#ifndef SKELETON_CACHE_NAME_SIZE
+// Defines the size of a CachedSkeleton's name
+#define SKELETON_CACHE_NAME_SIZE 30
+#endif
+#ifndef ANIMATION_CACHE_NAME_SIZE
+// Defines the size of a CachedAnimation's name
+#define ANIMATION_CACHE_NAME_SIZE 30
+#endif
 
+// A structure that stores T3DModel information, to be held within a ModelCache.
 typedef struct CachedModel CachedModel;
-typedef struct CachedSModel CachedSModel;
+// A structure that stores T3DSkeleton information, to be held within a CachedModel.
+typedef struct CachedSkeleton CachedSkeleton;
+// A structure that stores T3DAnimation information, to be held within a CachedModel.
+typedef struct CachedAnimation CachedAnimation;
+// A structure that stores a cached model, along with a matrix buffer.
+// Can draw a model.
 typedef struct Mesh3DModule Mesh3DModule;
 // A structure that allows for different behavioural code to be called when drawing a renderable module.
 // Has a basic function pointer for draw that may be "overloaded" for varying behaviours
@@ -24,13 +38,23 @@ typedef struct Render3DModule Render3DModule;
 
 struct CachedModel {
     T3DModel* model;
+    CachedSkeleton* skeletons;
+    CachedAnimation* animations;
     int uses;
     char name[MODEL_CACHE_NAME_SIZE];
+};
+struct CachedSkeleton {
+    T3DSkeleton skeleton;
+    char name[SKELETON_CACHE_NAME_SIZE];
+};
+struct CachedAnimation {
+    T3DAnim animation;
+    char name[ANIMATION_CACHE_NAME_SIZE];
 };
 
 void cosmesh_init();
 void model_cache_create(uint32_t size);
-CachedModel* load_model_into_cache(const char* location, const char* name);
+CachedModel* load_model_into_cache(const char* location, const char* name, uint32_t skeleton_count, uint32_t animation_count);
 void model_cache_clear();
 
 struct Render3DModule {

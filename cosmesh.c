@@ -14,12 +14,20 @@ void model_cache_create(uint32_t size) {
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, const char* name) {
+CachedModel* load_model_into_cache(const char* location, const char* name, uint32_t skeleton_count, uint32_t animation_count) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
         if (hash_add_pointer((void**)model_cache, model_cache_size, name, cached_model)) {
             strcpy(cached_model->name, name);
             cached_model->model = t3d_model_load(location);
+            if (skeleton_count > 0)
+                cached_model->skeletons = malloc(sizeof(CachedSkeleton) * skeleton_count);
+            else
+                cached_model->skeletons = NULL;
+            if (animation_count > 0)
+                cached_model->animations = malloc(sizeof(CachedAnimation) * animation_count);
+            else
+                cached_model->animations = NULL;
 
             return cached_model;
         }

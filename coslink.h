@@ -3,6 +3,7 @@
 
 #include <libdragon.h>
 
+// An object that can be added to a linked list.
 typedef struct LinkedMember LinkedMember;
 
 struct LinkedMember {

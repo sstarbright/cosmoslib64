@@ -15,7 +15,7 @@ void trans3d_module_create(Trans3DModule* module, const char* name) {
     module->rotation.y = 0.f;
     module->rotation.z = 0.f;
 
-    module->matrix = malloc_uncached(sizeof(T3DMat4FP));
+    module->matrix = malloc(sizeof(T3DMat4FP));
     t3d_mat4fp_identity(module->matrix);
 
     module->parent = NULL;
@@ -88,7 +88,7 @@ void trans3d_module_death(Module* self) {
 void trans3d_simple_module_death(Trans3DModule* module) {
     trans3d_pop_child((Trans3DModule*)module);
 
-    free_uncached(((Trans3DModule*)module)->matrix);
+    free(((Trans3DModule*)module)->matrix);
 }
 
 void trans2d_module_create(Trans2DModule* module, const char* name) {

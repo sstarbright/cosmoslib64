@@ -9,7 +9,8 @@
     - Figure out how I wanna do ambient lights
 
 ## cosmesh (Mesh Modules for cosams)
-- Implement Skinned Mesh for cosams (probably extends from Mesh3D)
+- Finish skinned mesh/animation code
+- Store skeletons and animations with hash
 - Code to alter prim color of each material before rendering it
 
 ## coshit (Collision Modules for cosams)
