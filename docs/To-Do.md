@@ -9,8 +9,9 @@
     - Figure out how I wanna do ambient lights
 
 ## cosmesh (Mesh Modules for cosams)
-- Finish skinned mesh/animation code
 - Store skeletons and animations with hash
+- Write functions to quick load/unload animations stored in mesh
+- Write code to free skeletons and animations when mesh is killed
 - Code to alter prim color of each material before rendering it
 
 ## coshit (Collision Modules for cosams)

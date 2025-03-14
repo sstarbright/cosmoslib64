@@ -69,9 +69,11 @@ struct Mesh3DModule {
     CachedModel* model;
 
     bool has_skeleton;
+    int max_skeletons;
     int num_skeletons;
     T3DSkeleton* skeletons;
 
+    int max_animations;
     int num_animations;
     SkinnedAnimation* animations;
     SkinnedAnimation* looping;

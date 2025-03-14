@@ -86,13 +86,14 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skele
                 t3d_mat4fp_identity(&module->matrix_buffer[i]);
             }
             
-            module->num_skeletons = skeleton_count;
-            module->num_animations = animation_count;
+            module->max_skeletons = skeleton_count;
+            module->max_animations = animation_count;
             module->has_skeleton = false;
             if (skeleton_count > 0) {
                 module->skeletons = malloc(sizeof(T3DSkeleton) * skeleton_count);
                 module->skeletons[0] = t3d_skeleton_create_buffered(module->model->model, display_get_num_buffers());
                 module->has_skeleton = true;
+                module->num_skeletons = 1;
             }
             else
                 module->skeletons = NULL;
@@ -100,6 +101,7 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skele
                 module->animations = malloc(sizeof(SkinnedAnimation) * animation_count);
             else
                 module->animations = NULL;
+            module->num_animations = 0;
             
             rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
@@ -123,13 +125,15 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skele
 void mesh3d_module_life(Module* self, float deltaTime) {
     Mesh3DModule* mesh_module = (Mesh3DModule*)self;
     if (mesh_module->has_skeleton) {
-        if (mesh_module->looping) {
-            t3d_anim_update(&mesh_module->looping->animation, deltaTime);
-        }
         if (mesh_module->oneshot) {
+            t3d_skeleton_reset(&mesh_module->skeletons[0]);
             t3d_anim_update(&mesh_module->oneshot->animation, deltaTime);
-            if (mesh_module->oneshot->animation.isPlaying)
+            if (!mesh_module->oneshot->animation.isPlaying) {
+                t3d_skeleton_reset(&mesh_module->skeletons[0]);
                 mesh_module->oneshot = NULL;
+            }
+        } else if (mesh_module->looping) {
+            t3d_anim_update(&mesh_module->looping->animation, deltaTime);
         }
         t3d_skeleton_update(&mesh_module->skeletons[0]);
     }
