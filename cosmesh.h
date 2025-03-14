@@ -3,6 +3,8 @@
 
 #include <libdragon.h>
 #include <t3d/t3dmodel.h>
+#include <t3d/t3dskeleton.h>
+#include <t3d/t3danim.h>
 #include "costrans.h"
 
 #ifndef MESH_MAT_SEGMENT_PLACEHOLDER
@@ -14,47 +16,34 @@
 // Defines the size of a CachedModel's name
 #define MODEL_CACHE_NAME_SIZE 50
 #endif
-#ifndef SKELETON_CACHE_NAME_SIZE
-// Defines the size of a CachedSkeleton's name
-#define SKELETON_CACHE_NAME_SIZE 30
-#endif
-#ifndef ANIMATION_CACHE_NAME_SIZE
-// Defines the size of a CachedAnimation's name
-#define ANIMATION_CACHE_NAME_SIZE 30
+#ifndef ANIMATION_NAME_SIZE
+// Defines the size of a SkinnedAnimation's name
+#define ANIMATION_NAME_SIZE 30
 #endif
 
 // A structure that stores T3DModel information, to be held within a ModelCache.
 typedef struct CachedModel CachedModel;
-// A structure that stores T3DSkeleton information, to be held within a CachedModel.
-typedef struct CachedSkeleton CachedSkeleton;
-// A structure that stores T3DAnimation information, to be held within a CachedModel.
-typedef struct CachedAnimation CachedAnimation;
-// A structure that stores a cached model, along with a matrix buffer.
-// Can draw a model.
 typedef struct Mesh3DModule Mesh3DModule;
+// A structure that stores SkinnedAnimation information, to be held within a Mesh3DModule.
+typedef struct SkinnedAnimation SkinnedAnimation;
 // A structure that allows for different behavioural code to be called when drawing a renderable module.
 // Has a basic function pointer for draw that may be "overloaded" for varying behaviours
 typedef struct Render3DModule Render3DModule;
 
 struct CachedModel {
     T3DModel* model;
-    CachedSkeleton* skeletons;
-    CachedAnimation* animations;
     int uses;
     char name[MODEL_CACHE_NAME_SIZE];
 };
-struct CachedSkeleton {
-    T3DSkeleton skeleton;
-    char name[SKELETON_CACHE_NAME_SIZE];
-};
-struct CachedAnimation {
+
+struct SkinnedAnimation {
     T3DAnim animation;
-    char name[ANIMATION_CACHE_NAME_SIZE];
+    char name[ANIMATION_NAME_SIZE];
 };
 
 void cosmesh_init();
 void model_cache_create(uint32_t size);
-CachedModel* load_model_into_cache(const char* location, const char* name, uint32_t skeleton_count, uint32_t animation_count);
+CachedModel* load_model_into_cache(const char* location, const char* name);
 void model_cache_clear();
 
 struct Render3DModule {
@@ -76,12 +65,24 @@ void render3d_module_death(Module* self);
 struct Mesh3DModule {
     Render3DModule render;
     T3DMat4FP* matrix_buffer;
+
     CachedModel* model;
+
+    bool has_skeleton;
+    int num_skeletons;
+    T3DSkeleton* skeletons;
+
+    int num_animations;
+    SkinnedAnimation* animations;
+    SkinnedAnimation* looping;
+    SkinnedAnimation* oneshot;
+
     rspq_block_t* block;
     uint32_t frame_buffer;
 };
 
-void mesh3d_module_create(Mesh3DModule* module, const char* name);
+void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skeleton_count, uint32_t animation_count);
+void mesh3d_module_life(Module* self, float _);
 void mesh3d_module_draw(Render3DModule* self, float delta, uint32_t frame_buffer);
 void mesh3d_module_death(Module* self);
 void mesh3d_simple_module_death(Mesh3DModule* self);

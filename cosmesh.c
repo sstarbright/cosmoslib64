@@ -14,21 +14,12 @@ void model_cache_create(uint32_t size) {
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, const char* name, uint32_t skeleton_count, uint32_t animation_count) {
+CachedModel* load_model_into_cache(const char* location, const char* name) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
         if (hash_add_pointer((void**)model_cache, model_cache_size, name, cached_model)) {
             strcpy(cached_model->name, name);
             cached_model->model = t3d_model_load(location);
-            if (skeleton_count > 0)
-                cached_model->skeletons = malloc(sizeof(CachedSkeleton) * skeleton_count);
-            else
-                cached_model->skeletons = NULL;
-            if (animation_count > 0)
-                cached_model->animations = malloc(sizeof(CachedAnimation) * animation_count);
-            else
-                cached_model->animations = NULL;
-
             return cached_model;
         }
         char debug_log_message[40];
@@ -76,7 +67,7 @@ void render3d_module_death(Module* self) {
     free((Render3DModule*)self);
 }
 
-void mesh3d_module_create(Mesh3DModule* module, const char* name) {
+void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skeleton_count, uint32_t animation_count) {
     if (model_cache) {
         int found_cache = hash_get_pointer((void**)model_cache, model_cache_size, name, offsetof(CachedModel, name));
         if (found_cache >= 0) {
@@ -84,6 +75,9 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name) {
             
             ((Render3DModule*)module)->draw = mesh3d_module_draw;
             ((Module*)module)->death = mesh3d_module_death;
+            ((Module*)module)->life = mesh3d_module_life;
+            module->looping = NULL;
+            module->oneshot = NULL;
 
             module->model = model_cache[found_cache];
             model_cache[found_cache]->uses += 1;
@@ -92,9 +86,27 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name) {
                 t3d_mat4fp_identity(&module->matrix_buffer[i]);
             }
             
+            module->num_skeletons = skeleton_count;
+            module->num_animations = animation_count;
+            module->has_skeleton = false;
+            if (skeleton_count > 0) {
+                module->skeletons = malloc(sizeof(T3DSkeleton) * skeleton_count);
+                module->skeletons[0] = t3d_skeleton_create_buffered(module->model->model, display_get_num_buffers());
+                module->has_skeleton = true;
+            }
+            else
+                module->skeletons = NULL;
+            if (animation_count > 0)
+                module->animations = malloc(sizeof(SkinnedAnimation) * animation_count);
+            else
+                module->animations = NULL;
+            
             rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
-                t3d_model_draw(module->model->model);
+                if (module->has_skeleton)
+                    t3d_model_draw_skinned(module->model->model, &module->skeletons[0]);
+                else
+                    t3d_model_draw(module->model->model);
                 t3d_matrix_pop(1);
             module->block = rspq_block_end();
         } else {
@@ -108,9 +120,25 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name) {
         // Maybe switch this to an error model?
     }
 }
+void mesh3d_module_life(Module* self, float deltaTime) {
+    Mesh3DModule* mesh_module = (Mesh3DModule*)self;
+    if (mesh_module->has_skeleton) {
+        if (mesh_module->looping) {
+            t3d_anim_update(&mesh_module->looping->animation, deltaTime);
+        }
+        if (mesh_module->oneshot) {
+            t3d_anim_update(&mesh_module->oneshot->animation, deltaTime);
+            if (mesh_module->oneshot->animation.isPlaying)
+                mesh_module->oneshot = NULL;
+        }
+        t3d_skeleton_update(&mesh_module->skeletons[0]);
+    }
+}
 void mesh3d_module_draw(Render3DModule* self, float _, uint32_t frame_buffer) {
     Mesh3DModule* mesh_module = (Mesh3DModule*)self;
     if (mesh_module->block) {
+        if (mesh_module->has_skeleton)
+            t3d_skeleton_use(&mesh_module->skeletons[0]);
         memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.matrix, sizeof(T3DMat4FP));
         t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
         rspq_block_run(mesh_module->block);
