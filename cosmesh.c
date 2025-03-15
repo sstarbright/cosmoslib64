@@ -159,4 +159,10 @@ void mesh3d_simple_module_death(Mesh3DModule* self) {
     rspq_block_free(self->block);
     free_uncached(self->matrix_buffer);
     self->model->uses -= 1;
+    for (int i = 0; i < self->num_skeletons; i++) {
+        t3d_skeleton_destroy(&self->skeletons[i]);
+    }
+    for (int i = 0; i < self->num_animations; i++) {
+        t3d_anim_destroy(&self->animations[i].animation);
+    }
 }
