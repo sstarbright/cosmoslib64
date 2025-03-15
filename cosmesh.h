@@ -26,6 +26,8 @@ typedef struct CachedModel CachedModel;
 typedef struct Mesh3DModule Mesh3DModule;
 // A structure that stores SkinnedAnimation information, to be held within a Mesh3DModule.
 typedef struct SkinnedAnimation SkinnedAnimation;
+typedef struct MeshSkeleton MeshSkeleton;
+typedef struct BoneTransform BoneTransform;
 // A structure that allows for different behavioural code to be called when drawing a renderable module.
 // Has a basic function pointer for draw that may be "overloaded" for varying behaviours
 typedef struct Render3DModule Render3DModule;
@@ -39,6 +41,16 @@ struct CachedModel {
 struct SkinnedAnimation {
     T3DAnim animation;
     char name[ANIMATION_NAME_SIZE];
+};
+
+struct MeshSkeleton {
+    T3DSkeleton skeleton;
+    BoneTransform* bone_trans;
+};
+
+struct BoneTransform {
+    Trans3DModule transform;
+    T3DMat4* bone_matrix;
 };
 
 void cosmesh_init();
