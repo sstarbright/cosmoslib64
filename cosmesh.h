@@ -23,14 +23,15 @@
 
 // A structure that stores T3DModel information, to be held within a ModelCache.
 typedef struct CachedModel CachedModel;
-typedef struct Mesh3DModule Mesh3DModule;
-// A structure that stores SkinnedAnimation information, to be held within a Mesh3DModule.
+typedef struct Mesh3DM Mesh3DM;
+// A structure that stores SkinnedAnimation information, to be held within a Mesh3DM.
 typedef struct SkinnedAnimation SkinnedAnimation;
 typedef struct MeshSkeleton MeshSkeleton;
-typedef struct BoneTransform BoneTransform;
+typedef struct Bone3DM Bone3DM;
+typedef struct LagBone3DM LagBone3DM;
 // A structure that allows for different behavioural code to be called when drawing a renderable module.
 // Has a basic function pointer for draw that may be "overloaded" for varying behaviours
-typedef struct Render3DModule Render3DModule;
+typedef struct Render3DM Render3DM;
 
 struct CachedModel {
     T3DModel* model;
@@ -48,34 +49,39 @@ struct MeshSkeleton {
     BoneTransform* bone_trans;
 };
 
-struct BoneTransform {
-    Trans3DModule transform;
+struct Bone3DM {
+    Trans3DM transform;
     T3DMat4* bone_matrix;
 };
+
+struct LagBone3DM {
+    Trans3DM transform;
+    T3DBone* bone;
+}
 
 void cosmesh_init();
 void model_cache_create(uint32_t size);
 CachedModel* load_model_into_cache(const char* location, const char* name);
 void model_cache_clear();
 
-struct Render3DModule {
+struct Render3DM {
     // The 3D transform of this Render3D module.
-    Trans3DModule transform;
+    Trans3DM transform;
     // The output color of this Render3D module.
     color_t color;
     // The function called when this Module is drawn.
-    void (*draw)(Render3DModule* self, float delta, uint32_t frame_buffer);
+    void (*draw)(Render3DM* self, float delta, uint32_t frame_buffer);
 };
 
 // Create a Render3D module, initializing its members.
-void render3d_module_create(Render3DModule* module, const char* name);
-// A basic function to be called upon Render3DModule draw.
-void render3d_module_draw(Render3DModule* module, float delta, uint32_t frame_buffer);
-// A basic function to be called upon Render3DModule death.
-void render3d_module_death(Module* self);
+void render3dm_create(Render3DM* module, const char* name);
+// A basic function to be called upon Render3DM draw.
+void render3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer);
+// A basic function to be called upon Render3DM death.
+void render3dm_death(Module* self);
 
-struct Mesh3DModule {
-    Render3DModule render;
+struct Mesh3DM {
+    Render3DM render;
     T3DMat4FP* matrix_buffer;
 
     CachedModel* model;
@@ -95,10 +101,10 @@ struct Mesh3DModule {
     uint32_t frame_buffer;
 };
 
-void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skeleton_count, uint32_t animation_count);
-void mesh3d_module_life(Module* self, float _);
-void mesh3d_module_draw(Render3DModule* self, float delta, uint32_t frame_buffer);
-void mesh3d_module_death(Module* self);
-void mesh3d_simple_module_death(Mesh3DModule* self);
+void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, uint32_t animation_count);
+void mesh3dm_create(Module* self, float _);
+void mesh3dm_draw(Render3DM* self, float delta, uint32_t frame_buffer);
+void mesh3dm_death(Module* self);
+void mesh3dm_simple_death(Mesh3DM* self);
 
 #endif

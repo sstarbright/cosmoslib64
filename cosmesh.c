@@ -52,30 +52,30 @@ void model_cache_clear() {
     free(model_cache);
 }
 
-void render3d_module_create(Render3DModule* module, const char* name) {
-    trans3d_module_create((Trans3DModule*)module, name);
-    ((Module*)module)->death = render3d_module_death;
+void render3dm_create(Render3DM* module, const char* name) {
+    trans3dm_create((Trans3DM*)module, name);
+    ((Module*)module)->death = render3dm_death;
 
     module->color = (color_t){0xFF, 0xFF, 0xFF, 0xFF};
-    module->draw = render3d_module_draw;
+    module->draw = render3dm_draw;
 }
-void render3d_module_draw(Render3DModule* _, float __, uint32_t ___) {
+void render3dm_draw(Render3DM* _, float __, uint32_t ___) {
     
 }
-void render3d_module_death(Module* self) {
-    trans3d_simple_module_death((Trans3DModule*)self);
-    free((Render3DModule*)self);
+void render3dm_death(Module* self) {
+    trans3dm_simple_death((Trans3DM*)self);
+    free((Render3DM*)self);
 }
 
-void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skeleton_count, uint32_t animation_count) {
+void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, uint32_t animation_count) {
     if (model_cache) {
         int found_cache = hash_get_pointer((void**)model_cache, model_cache_size, name, offsetof(CachedModel, name));
         if (found_cache >= 0) {
-            render3d_module_create((Render3DModule*)module, name);
+            render3dm_create((Render3DM*)module, name);
             
-            ((Render3DModule*)module)->draw = mesh3d_module_draw;
-            ((Module*)module)->death = mesh3d_module_death;
-            ((Module*)module)->life = mesh3d_module_life;
+            ((Render3DM*)module)->draw = mesh3dm_draw;
+            ((Module*)module)->death = mesh3dm_death;
+            ((Module*)module)->life = mesh3dm_create;
             module->looping = NULL;
             module->oneshot = NULL;
 
@@ -122,8 +122,8 @@ void mesh3d_module_create(Mesh3DModule* module, const char* name, uint32_t skele
         // Maybe switch this to an error model?
     }
 }
-void mesh3d_module_life(Module* self, float deltaTime) {
-    Mesh3DModule* mesh_module = (Mesh3DModule*)self;
+void mesh3dm_create(Module* self, float deltaTime) {
+    Mesh3DM* mesh_module = (Mesh3DM*)self;
     if (mesh_module->has_skeleton) {
         if (mesh_module->oneshot) {
             t3d_skeleton_reset(&mesh_module->skeletons[0]);
@@ -138,8 +138,8 @@ void mesh3d_module_life(Module* self, float deltaTime) {
         t3d_skeleton_update(&mesh_module->skeletons[0]);
     }
 }
-void mesh3d_module_draw(Render3DModule* self, float _, uint32_t frame_buffer) {
-    Mesh3DModule* mesh_module = (Mesh3DModule*)self;
+void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
+    Mesh3DM* mesh_module = (Mesh3DM*)self;
     if (mesh_module->block) {
         if (mesh_module->has_skeleton)
             t3d_skeleton_use(&mesh_module->skeletons[0]);
@@ -148,13 +148,13 @@ void mesh3d_module_draw(Render3DModule* self, float _, uint32_t frame_buffer) {
         rspq_block_run(mesh_module->block);
     }
 }
-void mesh3d_module_death(Module* self) {
-    mesh3d_simple_module_death((Mesh3DModule*)self);
+void mesh3dm_death(Module* self) {
+    mesh3dm_simple_death((Mesh3DM*)self);
     
-    free((Mesh3DModule*)self);
+    free((Mesh3DM*)self);
 }
-void mesh3d_simple_module_death(Mesh3DModule* self) {
-    trans3d_simple_module_death((Trans3DModule*)self);
+void mesh3dm_simple_death(Mesh3DM* self) {
+    trans3dm_simple_death((Trans3DM*)self);
 
     rspq_block_free(self->block);
     free_uncached(self->matrix_buffer);

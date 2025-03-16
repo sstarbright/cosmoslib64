@@ -134,6 +134,8 @@ struct Module {
     void (*active)(Module* self);
     // The function called when this Module is updated.
     void (*life)(Module* self, float delta);
+    // The backup for life function when this Module is disabled.
+    void (*d_life)(Module* self, float delta);
     // The function called when this Module is deactivated.
     void (*inactive)(Module* self);
     // The function called when this Module is killed.
@@ -145,19 +147,23 @@ struct Module {
 };
 
 // Create a module, initializing its members.
-void module_create(Module* module, const char* name);
+void m_create(Module* module, const char* name);
+// Enable this module. (Modules are enabled by default)
+void m_enable(Module* module);
+// Disable this module.
+void m_disable(Module* module);
 // Kill a module.
-void module_kill(Module* module);
+void m_kill(Module* module);
 // Kill a module without updating the linked list or hash table.
-void module_simple_kill(void* module_pointer);
+void m_simple_kill(void* module_pointer);
 
-// A basic function to be called upon Module activation.
-void module_active(Module* self);
+// A basic function to be called upon Module activation after being deactivated.
+void m_active(Module* self);
 // A basic function to be called upon Module update.
-void module_life(Module* self, float delta);
+void m_life(Module* self, float delta);
 // A basic function to be called upon Module deactivation.
-void module_inactive(Module* self);
+void m_inactive(Module* self);
 // A basic function to be called upon Module death.
-void module_death(Module* self);
+void m_death(Module* self);
 
 #endif

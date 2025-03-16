@@ -2,35 +2,31 @@
 #define __COSSTATE_H
 
 #include <libdragon.h>
+#include "cosams.h"
 #include <t3d/t3danim.h>
 
+typedef struct StateMachM StateMachM;
 typedef struct BasicState BasicState;
 typedef struct BasicTrans BasicTrans;
-typedef struct AnimState AnimState;
-typedef struct AnimTrans AnimTrans;
+
+struct StateMachM {
+    Module module;
+    BasicState* current_state;
+}
 
 struct BasicState {
-    BasicTrans* current_transition;
+    StateMachM* module;
     BasicTrans* transitions;
-    void (*birth)(BasicState* state);
+    void (*entry)(BasicState* state);
     void (*life)(BasicState* state, float delta, uint32_t frame_buffer);
-    void (*death)(BasicState* state);
+    void (*exit)(BasicState* state);
 };
 
 struct BasicTrans {
-    BasicState* target;
-    void (*entry)(BasicState* from, BasicTrans* state);
-    bool (*param)(BasicState* from, BasicTrans* state);
-};
-
-struct AnimState {
     BasicState state;
-    T3DAnim animation;
-};
-
-struct AnimTrans {
-    BasicTrans transition;
+    BasicState* target;
     float time;
+    bool (*param)(BasicState* from, BasicTrans* to);
 };
 
 #endif

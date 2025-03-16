@@ -121,46 +121,61 @@ void actor_kill(Actor* actor) {
 void actor_simple_kill(void* actor_pointer) {
     Actor* actor = (Actor*)actor_pointer;
     if (actor->module) {
-        linked_kill_list(actor->module, module_simple_kill, offsetof(Module, prev), offsetof(Module, next));
+        linked_kill_list(actor->module, m_simple_kill, offsetof(Module, prev), offsetof(Module, next));
     }
 
     free(actor);
 }
 
-void module_create(Module* module, const char* name) {
+void m_create(Module* module, const char* name) {
     strcpy(module->name, name);
     module->enabled = true;
     module->indexed = false;
     module->actor = NULL;
-    module->active = module_active;
-    module->life = module_life;
-    module->inactive = module_inactive;
-    module->death = module_death;
+    module->active = m_active;
+    module->life = m_life;
+    module->inactive = m_inactive;
+    module->death = m_death;
     module->prev = module;
     module->next = module;
 }
-void module_kill(Module* module) {
+void m_enable(Module* module) {
+    if (!module->enabled) {
+        module->enabled = true;
+        module->life = module->d_life;
+        module->active(module);
+    }
+}
+void m_disable(Module* module) {
+    if (module->enabled) {
+        module->enabled = false;
+        module->d_life = life;
+        module->life = m_life;
+        module->inactive(module);
+    }
+}
+void m_kill(Module* module) {
     if (module->actor && module->indexed) {
         hash_pop_pointer((void**)module->actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name));
     }
        
     linked_pop_from_list(module, offsetof(Module, prev), offsetof(Module, next));
-    module_simple_kill(module);
+    m_simple_kill(module);
 }
-void module_simple_kill(void* module_pointer) {
+void m_simple_kill(void* module_pointer) {
     Module* module = (Module*)module_pointer;
     module->death(module);
 }
 
-void module_active(Module* self) {
+void m_active(Module* self) {
     self->enabled = true;
 }
-void module_life(Module* self, float delta) {
+void m_life(Module* self, float delta) {
 
 }
-void module_inactive(Module* self) {
+void m_inactive(Module* self) {
     self->enabled = false;
 }
-void module_death(Module* module) {
+void m_death(Module* module) {
     free(module);
 }
