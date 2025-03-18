@@ -12,7 +12,7 @@ typedef struct BasicTrans BasicTrans;
 struct StateMachM {
     Module module;
     BasicState* current_state;
-}
+};
 
 struct BasicState {
     StateMachM* module;

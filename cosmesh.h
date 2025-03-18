@@ -26,7 +26,6 @@ typedef struct CachedModel CachedModel;
 typedef struct Mesh3DM Mesh3DM;
 // A structure that stores SkinnedAnimation information, to be held within a Mesh3DM.
 typedef struct SkinnedAnimation SkinnedAnimation;
-typedef struct MeshSkeleton MeshSkeleton;
 typedef struct Bone3DM Bone3DM;
 typedef struct LagBone3DM LagBone3DM;
 // A structure that allows for different behavioural code to be called when drawing a renderable module.
@@ -44,11 +43,6 @@ struct SkinnedAnimation {
     char name[ANIMATION_NAME_SIZE];
 };
 
-struct MeshSkeleton {
-    T3DSkeleton skeleton;
-    BoneTransform* bone_trans;
-};
-
 struct Bone3DM {
     Trans3DM transform;
     T3DMat4* bone_matrix;
@@ -57,7 +51,7 @@ struct Bone3DM {
 struct LagBone3DM {
     Trans3DM transform;
     T3DBone* bone;
-}
+};
 
 void cosmesh_init();
 void model_cache_create(uint32_t size);
@@ -102,7 +96,7 @@ struct Mesh3DM {
 };
 
 void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, uint32_t animation_count);
-void mesh3dm_create(Module* self, float _);
+void mesh3dm_life(Module* self, float _);
 void mesh3dm_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 void mesh3dm_death(Module* self);
 void mesh3dm_simple_death(Mesh3DM* self);

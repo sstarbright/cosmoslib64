@@ -75,7 +75,7 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
             
             ((Render3DM*)module)->draw = mesh3dm_draw;
             ((Module*)module)->death = mesh3dm_death;
-            ((Module*)module)->life = mesh3dm_create;
+            ((Module*)module)->life = mesh3dm_life;
             module->looping = NULL;
             module->oneshot = NULL;
 
@@ -122,7 +122,7 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
         // Maybe switch this to an error model?
     }
 }
-void mesh3dm_create(Module* self, float deltaTime) {
+void mesh3dm_life(Module* self, float deltaTime) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
     if (mesh_module->has_skeleton) {
         if (mesh_module->oneshot) {

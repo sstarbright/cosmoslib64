@@ -149,7 +149,7 @@ void m_enable(Module* module) {
 void m_disable(Module* module) {
     if (module->enabled) {
         module->enabled = false;
-        module->d_life = life;
+        module->d_life = module->life;
         module->life = m_life;
         module->inactive(module);
     }
