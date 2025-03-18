@@ -57,7 +57,11 @@ void render3dm_create(Render3DM* module, const char* name) {
     ((Module*)module)->death = render3dm_death;
 
     module->color = (color_t){0xFF, 0xFF, 0xFF, 0xFF};
+    module->predraw = render3dm_predraw;
     module->draw = render3dm_draw;
+}
+void render3dm_predraw(Render3DM* module, float delta, uint32_t frame_buffer) {
+
 }
 void render3dm_draw(Render3DM* _, float __, uint32_t ___) {
     
@@ -73,6 +77,7 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
         if (found_cache >= 0) {
             render3dm_create((Render3DM*)module, name);
             
+            ((Render3DM*)module)->predraw = mesh3dm_predraw;
             ((Render3DM*)module)->draw = mesh3dm_draw;
             ((Module*)module)->death = mesh3dm_death;
             ((Module*)module)->life = mesh3dm_life;
@@ -80,6 +85,7 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
             module->oneshot = NULL;
 
             module->model = model_cache[found_cache];
+            T3DModel target_model = module->model->model;
             model_cache[found_cache]->uses += 1;
             module->matrix_buffer = malloc_uncached(sizeof(T3DMat4FP) * display_get_num_buffers());
             for (int i=0; i < display_get_num_buffers(); i++) {
@@ -91,7 +97,7 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
             module->has_skeleton = false;
             if (skeleton_count > 0) {
                 module->skeletons = malloc(sizeof(T3DSkeleton) * skeleton_count);
-                module->skeletons[0] = t3d_skeleton_create_buffered(module->model->model, display_get_num_buffers());
+                module->skeletons[0] = t3d_skeleton_create_buffered(target_model, display_get_num_buffers());
                 module->has_skeleton = true;
                 module->num_skeletons = 1;
             }
@@ -106,9 +112,9 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
             rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
                 if (module->has_skeleton)
-                    t3d_model_draw_skinned(module->model->model, &module->skeletons[0]);
+                    t3d_model_draw_skinned(target_model, &module->skeletons[0]);
                 else
-                    t3d_model_draw(module->model->model);
+                    t3d_model_draw(target_model);
                 t3d_matrix_pop(1);
             module->block = rspq_block_end();
         } else {
@@ -135,15 +141,19 @@ void mesh3dm_life(Module* self, float deltaTime) {
         } else if (mesh_module->looping) {
             t3d_anim_update(&mesh_module->looping->animation, deltaTime);
         }
-        t3d_skeleton_update(&mesh_module->skeletons[0]);
     }
+}
+void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
+    Mesh3DM* mesh_module = (Mesh3DM*)self;
+    if (mesh_module->has_skeleton)
+        t3d_skeleton_update(&mesh_module->skeletons[0]);
+    memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.matrix, sizeof(T3DMat4FP));
 }
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
     if (mesh_module->block) {
         if (mesh_module->has_skeleton)
             t3d_skeleton_use(&mesh_module->skeletons[0]);
-        memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.matrix, sizeof(T3DMat4FP));
         t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
         rspq_block_run(mesh_module->block);
     }

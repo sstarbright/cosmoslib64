@@ -7,8 +7,9 @@ void stage_init(Stage* stage, const char* name) {
     memset(stage->actor_table, 0, STAGE_ACTORTABLE_MEMSIZE);
 }
 void stage_add_actor(Stage* stage, Actor* actor, bool indexed) {
-    if (stage->actor) {
-        linked_add_to_list(stage->actor->prev, stage->actor, actor, offsetof(Actor, prev), offsetof(Actor, next));
+    Actor* first_actor = stage->actor;
+    if (first_actor) {
+        linked_add_to_list(first_actor->prev, first_actor, actor, offsetof(Actor, prev), offsetof(Actor, next));
     } else {
         stage->actor = actor;
     }
@@ -50,8 +51,9 @@ void actor_init(Actor* actor, const char* name) {
 }
 void actor_add_module(Actor* actor, Module* module, bool indexed) {
     if (module) {
-        if (actor->module) {
-            linked_add_to_list(actor->module->prev, actor->module, module, offsetof(Module, prev), offsetof(Module, next));
+        Module* first_module = actor->module;
+        if (first_module) {
+            linked_add_to_list(first_module->prev, first_module, module, offsetof(Module, prev), offsetof(Module, next));
         } else {
             actor->module = module;
         }
@@ -110,8 +112,9 @@ void actor_life(Actor* actor, float delta) {
     while(current_module != actor->module);
 }
 void actor_kill(Actor* actor) {
-    if (actor->stage && actor->indexed) {
-        hash_pop_pointer((void**)actor->stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, offsetof(Actor, name));
+    Stage* stage = actor->stage;
+    if (stage && actor->indexed) {
+        hash_pop_pointer((void**)stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, offsetof(Actor, name));
     }
     
     linked_pop_from_list(actor, offsetof(Actor, prev), offsetof(Actor, next));
@@ -155,8 +158,9 @@ void m_disable(Module* module) {
     }
 }
 void m_kill(Module* module) {
-    if (module->actor && module->indexed) {
-        hash_pop_pointer((void**)module->actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name));
+    Actor* actor = module->actor;
+    if (actor && module->indexed) {
+        hash_pop_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name));
     }
        
     linked_pop_from_list(module, offsetof(Module, prev), offsetof(Module, next));

@@ -24,20 +24,22 @@ void trans3dm_create(Trans3DM* module, const char* name) {
     module->next = module;
 }
 void trans3dm_add_child(Trans3DM* parent, Trans3DM* child) {
-    if (parent->child) {
-        linked_add_to_list(parent->child->prev, parent->child, child, offsetof(Trans3DM, prev), offsetof(Trans3DM, next));
+    Trans3DM* first_child = parent->child;
+    if (first_child) {
+        linked_add_to_list(first_child->prev, first_child, child, offsetof(Trans3DM, prev), offsetof(Trans3DM, next));
     } else {
         parent->child = child;
     }
 }
 void trans3dm_pop_child(Trans3DM* child) {
     Trans3DM* next_child = child->next;
+    Trans3DM* parent = child->parent;
     if (linked_pop_from_list(child, offsetof(Trans3DM, prev), offsetof(Trans3DM, next))) {
-        if (child->parent)
-            child->parent->child = NULL;
+        if (parent)
+            parent->child = NULL;
     } else {
-        if (child->parent)
-            child->parent->child = next_child;
+        if (parent)
+            parent->child = next_child;
     }
 }
 void trans3dm_get_matrix(Trans3DM* module, T3DMat4* matRes) {

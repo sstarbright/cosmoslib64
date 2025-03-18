@@ -7,6 +7,13 @@
 #include <t3d/t3danim.h>
 #include "costrans.h"
 
+enum BlendMode {
+    RDP_BLEND_NONE = 0x00000000,
+    RDP_BLEND_MULTIPLY  = 0x00500040,
+    RDP_BLEND_MUL_CONST = 0x05500040,
+    RDP_BLEND_ADDITIVE  = 0x005A0040
+};
+
 #ifndef MESH_MAT_SEGMENT_PLACEHOLDER
 // Defines the segment placeholder for Mesh Matrices.
 #define MESH_MAT_SEGMENT_PLACEHOLDER 1
@@ -63,12 +70,17 @@ struct Render3DM {
     Trans3DM transform;
     // The output color of this Render3D module.
     color_t color;
+    // The function to be called just before drawing begins.
+    // (Useful in collectively updating everything related to rendering before drawing pipeline begins)
+    void (*predraw)(Render3DM* self, float delta, uint32_t frame_buffer);
     // The function called when this Module is drawn.
     void (*draw)(Render3DM* self, float delta, uint32_t frame_buffer);
 };
 
 // Create a Render3D module, initializing its members.
 void render3dm_create(Render3DM* module, const char* name);
+// A basic function to be called upon Render3DM predraw.
+void render3dm_predraw(Render3DM* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Render3DM draw.
 void render3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Render3DM death.
@@ -97,6 +109,7 @@ struct Mesh3DM {
 
 void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, uint32_t animation_count);
 void mesh3dm_life(Module* self, float _);
+void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 void mesh3dm_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 void mesh3dm_death(Module* self);
 void mesh3dm_simple_death(Mesh3DM* self);
