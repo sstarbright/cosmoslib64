@@ -7,7 +7,9 @@
 typedef struct LinkedMember LinkedMember;
 
 struct LinkedMember {
+    // The previous LinkedMember.
     LinkedMember* prev;
+    // The next LinkedMember.
     LinkedMember* next;
 };
 

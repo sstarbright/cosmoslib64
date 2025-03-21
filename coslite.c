@@ -12,9 +12,9 @@ void coslite_new_frame() {
     current_light = 0;
 }
 
-void dirlite3dm_create(DirLite3DM* module, const char* name) {
+void dirlite3dm_create(DirLite3DM* module) {
     if (light_count < 7) {
-        render3dm_create((Render3DM*)module, name);
+        render3dm_create((Render3DM*)module);
         ((Trans3DM*)module)->matup = dirlite3dm_matup;
         trans3dm_update_matrix(((Trans3DM*)module));
         ((Render3DM*)module)->draw = dirlite3dm_draw;
@@ -38,9 +38,9 @@ void dirlite3dm_death(Module* self) {
     free((DirLite3DM*)self);
 }
 
-void pntlite3dm_create(PntLite3DM* module, const char* name) {
+void pntlite3dm_create(PntLite3DM* module) {
     if (light_count < 7) {
-        render3dm_create((Render3DM*)module, name);
+        render3dm_create((Render3DM*)module);
         ((Trans3DM*)module)->matup = pntlite3dm_matup;
         trans3dm_update_matrix(((Trans3DM*)module));
         ((Render3DM*)module)->draw = pntlite3dm_draw;

@@ -6,7 +6,6 @@ void linked_add_to_list(void* last_item, void* first_item, void* item_to_add, in
     *(void**)(last_item+n_offset) = item_to_add;
     *(void**)(item_to_add+p_offset) = last_item;
     *(void**)(item_to_add+n_offset) = first_item;
-    // Add code here to set parent pointer
 }
 
 bool linked_pop_from_list(void* item_to_pop, int p_offset, int n_offset) {

@@ -1,8 +1,8 @@
 #include "coscam.h"
 #include <libdragon.h>
 
-void camera3dm_create(Camera3DM* module, const char* name) {
-    render3dm_create((Render3DM*)module, name);
+void camera3dm_create(Camera3DM* module) {
+    render3dm_create((Render3DM*)module);
 
     ((Module*)module)->life = camera3dm_life;
     ((Module*)module)->death = camera3dm_death;

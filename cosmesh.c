@@ -1,34 +1,25 @@
 #include "cosmesh.h"
 
 CachedModel** model_cache;
-uint32_t model_cache_size;
+int model_cache_size;
 
 void cosmesh_init() {
     model_cache = NULL;
     model_cache_size = 0;
 }
 
-void model_cache_create(uint32_t size) {
+void model_cache_create(int size) {
     model_cache = malloc(sizeof(CachedModel*)*size);
     model_cache_size = size;
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, const char* name) {
+CachedModel* load_model_into_cache(const char* location, int slot) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
-        if (hash_add_pointer((void**)model_cache, model_cache_size, name, cached_model)) {
-            strcpy(cached_model->name, name);
-            cached_model->model = t3d_model_load(location);
-            return cached_model;
-        }
-        char debug_log_message[40];
-        strcpy(debug_log_message, "Cache failure on Model '");
-        strcpy(debug_log_message, name);
-        strcpy(debug_log_message, "'.\n");
-        debugf(debug_log_message);
-        free(cached_model);
-        return NULL;
+        cached_model->model = t3d_model_load(location);
+        model_cache[slot] = cached_model;
+        return cached_model;
     }
     char debug_log_message[40];
     strcpy(debug_log_message, "Cache is uninitialized.\n");
@@ -52,8 +43,8 @@ void model_cache_clear() {
     free(model_cache);
 }
 
-void render3dm_create(Render3DM* module, const char* name) {
-    trans3dm_create((Trans3DM*)module, name);
+void render3dm_create(Render3DM* module) {
+    trans3dm_create((Trans3DM*)module);
     ((Module*)module)->death = render3dm_death;
 
     module->color = (color_t){0xFF, 0xFF, 0xFF, 0xFF};
@@ -71,11 +62,10 @@ void render3dm_death(Module* self) {
     free((Render3DM*)self);
 }
 
-void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, uint32_t animation_count) {
+void mesh3dm_create(Mesh3DM* module, int model_slot, uint64_t trans_or, uint64_t trans_xor, int skeleton_count, int animation_count) {
     if (model_cache) {
-        int found_cache = hash_get_pointer((void**)model_cache, model_cache_size, name, offsetof(CachedModel, name));
-        if (found_cache >= 0) {
-            render3dm_create((Render3DM*)module, name);
+        if (model_slot >= 0 && model_slot < model_cache_size && model_cache[model_slot]) {
+            render3dm_create((Render3DM*)module);
             
             ((Render3DM*)module)->predraw = mesh3dm_predraw;
             ((Render3DM*)module)->draw = mesh3dm_draw;
@@ -84,9 +74,9 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
             module->looping = NULL;
             module->oneshot = NULL;
 
-            module->model = model_cache[found_cache];
-            T3DModel target_model = module->model->model;
-            model_cache[found_cache]->uses += 1;
+            module->model = model_cache[model_slot];
+            T3DModel* target_model = module->model->model;
+            model_cache[model_slot]->uses += 1;
             module->matrix_buffer = malloc_uncached(sizeof(T3DMat4FP) * display_get_num_buffers());
             for (int i=0; i < display_get_num_buffers(); i++) {
                 t3d_mat4fp_identity(&module->matrix_buffer[i]);
@@ -116,15 +106,39 @@ void mesh3dm_create(Mesh3DM* module, const char* name, uint32_t skeleton_count, 
                 else
                     t3d_model_draw(target_model);
                 t3d_matrix_pop(1);
-            module->block = rspq_block_end();
+            module->base_block = rspq_block_end();
+            module->block = module->base_block;
+
+            for(uint32_t i = 0; i < target_model->chunkCount; i++) {
+                if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
+                  uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
+                  T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
+                  mat->blendMode = RDPQ_BLENDER_MULTIPLY;
+                  mat->colorCombiner |= trans_or;
+                  mat->colorCombiner ^= trans_xor;
+                }
+            }
+
+            rspq_block_begin();
+                t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
+                if (module->has_skeleton)
+                    t3d_model_draw_skinned(target_model, &module->skeletons[0]);
+                else
+                    t3d_model_draw(target_model);
+                t3d_matrix_pop(1);
+            module->trans_block = rspq_block_end();
         } else {
             free(module);
             module = NULL;
+            debugf("No model found in slot %i.\n", model_slot);
             // Maybe switch this to an error model?
         }
     } else {
         free(module);
         module = NULL;
+        char debug_log_message[40];
+        strcpy(debug_log_message, "Cache is uninitialized.\n");
+        debugf(debug_log_message);
         // Maybe switch this to an error model?
     }
 }
@@ -147,7 +161,7 @@ void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
     if (mesh_module->has_skeleton)
         t3d_skeleton_update(&mesh_module->skeletons[0]);
-    memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.matrix, sizeof(T3DMat4FP));
+    memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.fp_matrix, sizeof(T3DMat4FP));
 }
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
@@ -155,6 +169,7 @@ void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
         if (mesh_module->has_skeleton)
             t3d_skeleton_use(&mesh_module->skeletons[0]);
         t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
+        rdpq_set_prim_color(self->color);
         rspq_block_run(mesh_module->block);
     }
 }
@@ -166,7 +181,8 @@ void mesh3dm_death(Module* self) {
 void mesh3dm_simple_death(Mesh3DM* self) {
     trans3dm_simple_death((Trans3DM*)self);
 
-    rspq_block_free(self->block);
+    rspq_block_free(self->base_block);
+    rspq_block_free(self->trans_block);
     free_uncached(self->matrix_buffer);
     self->model->uses -= 1;
     for (int i = 0; i < self->num_skeletons; i++) {

@@ -24,7 +24,7 @@ struct Camera3DM {
 };
 
 // Create a Camera3D module, initializing its members.
-void camera3dm_create(Camera3DM* module, const char* name);
+void camera3dm_create(Camera3DM* module);
 // A basic function to be called upon Camera3DM life.
 void camera3dm_life(Module* self, float delta);
 // A basic function to be called upon Camera3DM matrix update.

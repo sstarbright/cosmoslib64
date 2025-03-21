@@ -1,21 +1,32 @@
 #include "cosams.h"
 #include <libdragon.h>
 
-void stage_init(Stage* stage, const char* name) {
-    strcpy(stage->name, name);
+void stage_init(Stage* stage, int index_size) {
+    uint32_t index_mem_size = sizeof(void*)*index_size;
     stage->actor = NULL;
-    memset(stage->actor_table, 0, STAGE_ACTORTABLE_MEMSIZE);
+    if (index_size > 0)
+        stage->actor_table = malloc(index_mem_size);
+    else
+        stage->actor_table = NULL;
+    memset(stage->actor_table, 0, index_mem_size);
 }
-void stage_add_actor(Stage* stage, Actor* actor, bool indexed) {
+void stage_add_actor(Stage* stage, Actor* actor, int slot) {
     Actor* first_actor = stage->actor;
     if (first_actor) {
         linked_add_to_list(first_actor->prev, first_actor, actor, offsetof(Actor, prev), offsetof(Actor, next));
     } else {
         stage->actor = actor;
     }
-    if (indexed) {
-        if (hash_add_pointer((void**)stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, actor)) {
-            actor->indexed = true;
+    if (slot >= 0) {
+        if (stage->actor_table) {
+            if(!stage->actor_table[slot]) {
+                stage->actor_table[slot] = actor;
+                actor->index_slot = slot;
+            } else {
+                debugf("An Actor already exists in Slot %i!\n", slot);
+            }
+        } else {
+            debugf("The Actor Table is missing.\n");
         }
     }
 }
@@ -34,22 +45,30 @@ void stage_kill(Stage* stage) {
         linked_kill_list(stage->actor, actor_simple_kill, offsetof(Actor, prev), offsetof(Actor, next));
     }
 
+    if (stage->actor_table)
+        free(stage->actor_table);
+
     free(stage);
     stage = NULL;
 }
 
-void actor_init(Actor* actor, const char* name) {
-    strcpy(actor->name, name);
+void actor_init(Actor* actor, int index_size) {
+    uint32_t index_mem_size = sizeof(void*)*index_size;
+    actor->attributes = 0;
+    actor->index_size = index_size;
     actor->module = NULL;
     actor->stage = NULL;
     actor->enabled = true;
-    actor->indexed = false;
+    actor->index_slot = -1;
     actor->prev = actor;
     actor->next = actor;
-    memset(actor->module_table, 0, ACTOR_MODULETABLE_MEMSIZE);
-    memset(actor->tags, 0, ACTOR_TAGTABLE_MEMSIZE);
+    if (index_size > 0)
+        actor->module_table = malloc(index_mem_size);
+    else
+        actor->module_table = NULL;
+    memset(actor->module_table, 0, index_mem_size);
 }
-void actor_add_module(Actor* actor, Module* module, bool indexed) {
+void actor_add_module(Actor* actor, Module* module, int slot) {
     if (module) {
         Module* first_module = actor->module;
         if (first_module) {
@@ -57,49 +76,20 @@ void actor_add_module(Actor* actor, Module* module, bool indexed) {
         } else {
             actor->module = module;
         }
-        if (indexed) {
-            if(hash_add_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, module)) {
-                module->indexed = true;
+        if (slot >= 0) {
+            if (actor->module_table) {
+                if(!actor->module_table[slot]) {
+                    actor->module_table[slot] = module;
+                    module->index_slot = slot;
+                } else {
+                    debugf("A Module already exists in Slot %i!\n", slot);
+                }
+            } else {
+                debugf("The Module Table is missing.\n");
             }
-
-            char debug_log_message[40];
-            strcpy(debug_log_message, "Index failure on Actor '");
-            strcpy(debug_log_message, actor->name);
-            strcpy(debug_log_message, "'.\n");
-            debugf(debug_log_message);
         }
         module->actor = actor;
     }
-}
-Module* actor_get_indexed_module(Actor* actor, const char* name) {
-    int found_module = hash_get_pointer((void**)actor->module_table, ACTOR_MODULETABLE_MEMSIZE, name, offsetof(Module, name));
-    if (found_module >= 0)
-        return actor->module_table[found_module];
-    return NULL;
-}
-bool actor_add_tag(Actor* actor, const char* tag) {
-    Tag* new_tag = malloc(sizeof(Tag));
-    if(hash_add_pointer((void**)actor->tags, ACTOR_TAGTABLE_SIZE, tag, new_tag)) {
-        strcpy(new_tag->tag, tag);
-        return true;
-    }
-
-    char debug_log_message[40];
-    strcpy(debug_log_message, "Tag failure on Actor '");
-    strcpy(debug_log_message, actor->name);
-    strcpy(debug_log_message, "'.\n");
-    debugf(debug_log_message);
-    free(new_tag);
-    return false;
-}
-bool actor_has_tag(Actor* actor, const char* tag) {
-    return hash_get_pointer((void**)actor->tags, ACTOR_TAGTABLE_SIZE, tag, offsetof(Tag, tag)) >= 0;
-}
-void actor_pop_tag(Actor* actor, const char* tag) {
-    Tag* pop_tag = hash_pop_pointer((void**)actor->tags, ACTOR_TAGTABLE_SIZE, tag, offsetof(Tag, tag));
-
-    if (pop_tag)
-        free(pop_tag);
 }
 void actor_life(Actor* actor, float delta) {
     Module* current_module = actor->module;
@@ -113,9 +103,12 @@ void actor_life(Actor* actor, float delta) {
 }
 void actor_kill(Actor* actor) {
     Stage* stage = actor->stage;
-    if (stage && actor->indexed) {
-        hash_pop_pointer((void**)stage->actor_table, STAGE_ACTORTABLE_SIZE, actor->name, offsetof(Actor, name));
+    if (stage && actor->index_slot >= 0) {
+        stage->actor_table[actor->index_slot] = NULL;
     }
+
+    if (actor->module_table)
+        free(actor->module_table);
     
     linked_pop_from_list(actor, offsetof(Actor, prev), offsetof(Actor, next));
 
@@ -130,10 +123,9 @@ void actor_simple_kill(void* actor_pointer) {
     free(actor);
 }
 
-void m_create(Module* module, const char* name) {
-    strcpy(module->name, name);
+void m_create(Module* module) {
     module->enabled = true;
-    module->indexed = false;
+    module->index_slot = -1;
     module->actor = NULL;
     module->active = m_active;
     module->life = m_life;
@@ -159,8 +151,8 @@ void m_disable(Module* module) {
 }
 void m_kill(Module* module) {
     Actor* actor = module->actor;
-    if (actor && module->indexed) {
-        hash_pop_pointer((void**)actor->module_table, ACTOR_MODULETABLE_SIZE, module->name, offsetof(Module, name));
+    if (actor && module->index_slot >= 0) {
+        actor->module_table[module->index_slot] = NULL;
     }
        
     linked_pop_from_list(module, offsetof(Module, prev), offsetof(Module, next));
