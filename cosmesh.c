@@ -3,36 +3,6 @@
 CachedModel** model_cache;
 int model_cache_size;
 
-void cosmesh_draw_custom(const T3DModel* model, T3DModelDrawConf conf, int unshaded)
-{
-  T3DModelState state = t3d_model_state_create();
-  state.drawConf = &conf;
-
-  T3DModelIter it = t3d_model_iter_create(model, T3D_CHUNK_TYPE_OBJECT);
-  uint32_t current_mat = 0;
-  while(t3d_model_iter_next(&it))
-  {
-    if(conf.filterCb && !conf.filterCb(conf.userData, it.object)) {
-      continue;
-    }
-
-    if(it.object->material) {
-      if ((unshaded>>current_mat)&1) {
-        debugf("%i\n", (int)current_mat);
-        t3d_light_set_ambient((uint8_t[4]){0xFF, 0xFF, 0xFF, 0xFF});
-        t3d_light_set_count(0);
-        t3d_model_draw_material(it.object->material, &state);
-      } else {
-        t3d_model_draw_material(it.object->material, &state);
-      }
-      current_mat++;
-    }
-    t3d_model_draw_object(it.object, conf.matrices);
-  }
-
-  if(state.lastVertFXFunc != T3D_VERTEX_FX_NONE)t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
-}
-
 void cosmesh_init() {
     model_cache = NULL;
     model_cache_size = 0;
@@ -44,11 +14,10 @@ void model_cache_create(int size) {
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, int slot, int unshaded) {
+CachedModel* load_model_into_cache(const char* location, int slot) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
         cached_model->model = t3d_model_load(location);
-        cached_model->unshaded = unshaded;
         model_cache[slot] = cached_model;
         return cached_model;
     }
@@ -140,9 +109,9 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int ani
             rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
                 if (module->has_skeleton)
-                    cosmesh_draw_skinned(target_model, &module->skeletons[0], module->model->unshaded);
+                    t3d_model_draw_skinned(target_model, &module->skeletons[0]);
                 else
-                    cosmesh_draw(target_model, module->model->unshaded);
+                    t3d_model_draw(target_model);
                 t3d_matrix_pop(1);
             module->base_block = rspq_block_end();
             module->block = module->base_block;
