@@ -7,17 +7,54 @@
 #include <t3d/t3danim.h>
 #include "costrans.h"
 
-enum ColorCombinerMasks {
-    // Sets combiner to add Primitive Color instead of multiply (OR).
-    COMBINER_GLOW_OR =  0x0000008000000000,
-    // Sets combiner to add Primitive Color instead of multiply (XOR).
-    COMBINER_GLOW_XOR = 0x0000002000000100
-};
-
 #ifndef MESH_MAT_SEGMENT_PLACEHOLDER
 // Defines the segment placeholder for Mesh Matrices.
 #define MESH_MAT_SEGMENT_PLACEHOLDER 1
 #endif
+
+// Set the Ambient Light
+void coslite_set_ambient(color_t color);
+// Fetch the number of Directional/Point lights currently active.
+uint32_t coslite_get_count();
+// Renews Lighting Data from Lighting Cache.
+void coslite_renew();
+
+/**
+ * Draws a model with a custom configuration.
+ * This call can be recorded into a display list.
+ * @param model model to draw
+ * @param conf custom configuration
+ */
+void cosmesh_draw_custom(const T3DModel* model, T3DModelDrawConf conf, int unshaded);
+
+/**
+ * Draws a model with default settings.
+ * This call can be recorded into a display list.
+ * @param model model to draw
+ */
+static inline void cosmesh_draw(const T3DModel* model, int unshaded) {
+    cosmesh_draw_custom(model, (T3DModelDrawConf){
+      .userData = NULL,
+      .tileCb = NULL,
+      .filterCb = NULL
+    }, unshaded);
+  }
+
+/**
+ * Draws a skinned model with default settings.
+ * Alternatively, use 't3d_model_draw_custom' and set 'matrices' in the config.
+ * @param model
+ */
+static inline void cosmesh_draw_skinned(const T3DModel* model, const T3DSkeleton* skeleton, int unshaded) {
+    cosmesh_draw_custom(model, (T3DModelDrawConf){
+      .userData = NULL,
+      .tileCb = NULL,
+      .filterCb = NULL,
+      .matrices = skeleton->bufferCount == 1
+        ? skeleton->boneMatricesFP
+        : (const T3DMat4FP*)t3d_segment_placeholder(T3D_SEGMENT_SKELETON)
+    }, unshaded);
+  }
 
 // A structure that stores T3DModel information, to be held within a ModelCache.
 typedef struct CachedModel CachedModel;
@@ -39,6 +76,8 @@ typedef struct Mesh3DM Mesh3DM;
 struct CachedModel {
     // The Tiny3D model that this cache stores.
     T3DModel* model;
+    // Flags for each material's unshaded state.
+    int unshaded;
     // The number of uses this Model currently has.
     int uses;
 };
@@ -69,7 +108,7 @@ void cosmesh_init();
 // Creates the Cosmos Mesh model cache, with a specific number of models.
 void model_cache_create(int size);
 // Loads a model into the model cache, at a specific slot.
-CachedModel* load_model_into_cache(const char* location, int slot);
+CachedModel* load_model_into_cache(const char* location, int slot, int unshaded);
 // Clears the model cache.
 void model_cache_clear();
 
@@ -130,7 +169,7 @@ struct Mesh3DM {
 
 // Create a Mesh3D module, initializing its members.
 // Set trans_or and trans_xor to customize the color combiner for the trans_block.
-void mesh3dm_create(Mesh3DM* module, int model_slot, uint64_t trans_or, uint64_t trans_xor, int skeleton_count, int animation_count);
+void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count);
 // A basic function to be called upon Mesh3DM life.
 void mesh3dm_life(Module* self, float _);
 // A basic function to be called upon Mesh3DM predraw.

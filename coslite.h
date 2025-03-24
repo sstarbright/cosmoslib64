@@ -3,6 +3,9 @@
 #include <libdragon.h>
 #include "cosmesh.h"
 
+// A structure that stores a light to be cached for rendering.
+typedef struct CachedLight CachedLight;
+// A structure that stores a Directional Light's data.
 // A structure that adds a Directional Light to a T3D Scene being rendered.
 // Can draw a Directional Light.
 typedef struct DirLite3DM DirLite3DM;
@@ -10,10 +13,21 @@ typedef struct DirLite3DM DirLite3DM;
 // Can draw a Point Light.
 typedef struct PntLite3DM PntLite3DM;
 
-// Fetch the number of Directional/Point lights currently active.
-uint32_t coslite_get_count();
 // Refreshes the drawn light counter.
 void coslite_new_frame();
+// Adds a directional light to the Lighting Cache.
+void coslite_add_directional(int index, uint8_t *color, T3DVec3 *dir);
+// Adds a point light to the Lighting Cache
+void coslite_add_point(int index, uint8_t *color, T3DVec3 *pos, float size, bool ignoreNormals);
+
+struct CachedLight {
+    int index;
+    bool is_point;
+    uint8_t* color;
+    T3DVec3* vector;
+    float size;
+    bool ignoreNormals;
+};
 
 struct DirLite3DM {
     // A render module.
