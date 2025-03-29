@@ -59,7 +59,7 @@ void render3dm_draw(Render3DM* _, float __, uint32_t ___) {
 }
 void render3dm_death(Module* self) {
     trans3dm_simple_death((Trans3DM*)self);
-    free((Render3DM*)self);
+    free(self);
 }
 
 void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count) {
@@ -164,7 +164,7 @@ void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
 void mesh3dm_death(Module* self) {
     mesh3dm_simple_death((Mesh3DM*)self);
     
-    free((Mesh3DM*)self);
+    free(self);
 }
 void mesh3dm_simple_death(Mesh3DM* self) {
     trans3dm_simple_death((Trans3DM*)self);

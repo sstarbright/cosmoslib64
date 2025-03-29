@@ -7,30 +7,33 @@
 
 typedef struct StateM StateM;
 typedef struct BasicSt BasicSt;
-typedef struct BasicTr BasicTr;
+typedef struct StateTr StateTr;
 
 struct StateM {
     Module module;
     BasicSt* current_state;
     BasicSt* states;
+    int target_state;
     int state_count;
 };
 
 struct BasicSt {
     StateM* module;
     int id;
-    BasicTr* transitions;
+    StateTr* transitions;
+    int* trans_ids;
+    int trans_count;
     void (*entry)(BasicSt* state);
-    void (*life)(BasicSt* state, float delta);
+    void (*life)(BasicSt* state, float delta, bool is_first, float strength);
     void (*exit)(BasicSt* state);
 };
 
-struct BasicTr {
+struct StateTr {
     BasicSt state;
     BasicSt* from;
     BasicSt* to;
     float time;
-    bool (*param)(BasicSt* from, BasicTr* to);
+    bool (*param)(BasicSt* from, StateTr* to);
 };
 
 void statem_create(StateM* module, int state_count, int state_size);
@@ -38,14 +41,14 @@ void statem_life(Module* self, float delta);
 void statem_death(Module* self);
 void statem_simple_death(StateM* self);
 
-void basicst_create(StateM* machine, int slot);
+void basicst_create(StateM* machine, int slot, int trans_count);
 void basicst_entry(BasicSt* state);
-void basicst_life(BasicSt* state, float delta);
+void basicst_life(BasicSt* state, float delta, bool is_first, float strength);
 void basicst_exit(BasicSt* state);
 
-void basictr_create(StateM* machine, int from, int to);
-void basictr_param(BasicSt* from, BasicSt* to);
-void basictr_entry(BasicSt* state);
-void basictr_life(BasicSt* state, float delta);
+void statetr_create(StateM* machine, int from, int to);
+void statetr_param(BasicSt* from, BasicSt* to);
+void statetr_entry(BasicSt* state);
+void statetr_life(BasicSt* state, float delta, bool is_first, float strength);
 
 #endif

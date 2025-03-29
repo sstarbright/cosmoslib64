@@ -77,7 +77,7 @@ void trans3dm_module_matup(Trans3DM* self, const T3DMat4* global_mat) {
 void trans3dm_death(Module* self) {
     trans3dm_simple_death((Trans3DM*)self);
     
-    free((Trans3DM*)self);
+    free(self);
 }
 void trans3dm_simple_death(Trans3DM* module) {
     trans3dm_pop_child((Trans3DM*)module);
@@ -100,7 +100,7 @@ void trans2dm_create(Trans2DM* module) {
 void trans2dm_death(Module* self) {
     trans2dm_simple_death((Trans2DM*)self);
     
-    free((Trans2DM*)self);
+    free(self);
 }
 void trans2dm_simple_death(Trans2DM* module) {
 

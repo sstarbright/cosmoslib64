@@ -34,7 +34,7 @@ void dirlite3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer) {
 void dirlite3dm_death(Module* self) {
     trans3dm_simple_death((Trans3DM*)self);
 
-    free((DirLite3DM*)self);
+    free(self);
 }
 
 void pntlite3dm_create(PntLite3DM* module) {
@@ -61,5 +61,5 @@ void pntlite3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer) {
 void pntlite3dm_death(Module* self) {
     trans3dm_simple_death((Trans3DM*)self);
 
-    free((PntLite3DM*)self);
+    free(self);
 }

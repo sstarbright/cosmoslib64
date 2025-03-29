@@ -28,7 +28,7 @@ void camera3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer) {
 }
 void camera3dm_death(Module* self) {
     camera3dm_simple_death((Camera3DM*)self);
-    free((Camera3DM*)self);
+    free(self);
 }
 void camera3dm_simple_death(Camera3DM* self) {
     trans3dm_simple_death((Trans3DM*)self);
