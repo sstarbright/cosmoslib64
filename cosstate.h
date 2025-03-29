@@ -11,6 +11,8 @@ typedef struct StateTr StateTr;
 
 struct StateM {
     Module module;
+    T3DSkeleton* main_skeleton;
+    T3DSkeleton* blend_skeleton;
     BasicSt* current_state;
     BasicSt* states;
     int target_state;
@@ -26,6 +28,7 @@ struct BasicSt {
     void (*entry)(BasicSt* state);
     void (*life)(BasicSt* state, float delta, bool is_first, float strength);
     void (*exit)(BasicSt* state);
+    void (*death)(BasicSt* state);
 };
 
 struct StateTr {
@@ -33,6 +36,7 @@ struct StateTr {
     BasicSt* from;
     BasicSt* to;
     float time;
+    float elapsed;
     bool (*param)(BasicSt* from, StateTr* to);
 };
 
@@ -45,9 +49,11 @@ void basicst_create(StateM* machine, int slot, int trans_count);
 void basicst_entry(BasicSt* state);
 void basicst_life(BasicSt* state, float delta, bool is_first, float strength);
 void basicst_exit(BasicSt* state);
+void basicst_death(BasicSt* state);
+void basicst_simple_death(BasicSt* state);
 
-void statetr_create(StateM* machine, int from, int to);
-void statetr_param(BasicSt* from, BasicSt* to);
+void statetr_create(StateM* machine, int from, int to, float time);
+bool statetr_param(BasicSt* from, BasicSt* to);
 void statetr_entry(BasicSt* state);
 void statetr_life(BasicSt* state, float delta, bool is_first, float strength);
 
