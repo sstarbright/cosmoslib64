@@ -2,9 +2,7 @@
 #define __COSMESH_H
 
 #include <libdragon.h>
-#include <t3d/t3dmodel.h>
-#include <t3d/t3dskeleton.h>
-#include <t3d/t3danim.h>
+#include "cosstate.h"
 #include "costrans.h"
 
 #ifndef MESH_MAT_SEGMENT_PLACEHOLDER
@@ -14,9 +12,6 @@
 
 // A structure that stores T3DModel information, to be held within a ModelCache.
 typedef struct CachedModel CachedModel;
-// A structure that stores SkinnedAnimation information, to be held within a Mesh3DM.
-// DEPRECATED - Will be removed when AnimationState is setup.
-typedef struct SkinnedAnimation SkinnedAnimation;
 // A structure that extracts a T3DBone's transform into a Trans3D Module.
 // For use in parenting other Trans3Ds to a T3DBone.
 typedef struct Bone3DM Bone3DM;
@@ -26,6 +21,7 @@ typedef struct LagBone3DM LagBone3DM;
 // A structure that allows for different behavioural code to be called when drawing a renderable module.
 // Has a basic function pointer for draw that may be "overloaded" for varying behaviours
 typedef struct Render3DM Render3DM;
+typedef struct AnimSt AnimSt;
 // A structure that uses a Render3D Module to draw a mesh with Primitive Color and 3D transformations.
 typedef struct Mesh3DM Mesh3DM;
 
@@ -34,11 +30,6 @@ struct CachedModel {
     T3DModel* model;
     // The number of uses this Model currently has.
     int uses;
-};
-
-struct SkinnedAnimation {
-    T3DAnim animation;
-    char name[30];
 };
 
 struct Bone3DM {
@@ -87,6 +78,18 @@ void render3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Render3DM death.
 void render3dm_death(Module* self);
 
+struct AnimSt {
+    BasicSt state;
+    T3DAnim anim;
+    T3DAnim blend_anim;
+};
+
+void animst_create(StateM* machine, int slot, int trans_count, T3DModel* source, const char* name);
+void animst_entry(BasicSt* state, float time);
+void animst_life(BasicSt* state, float delta, bool is_first, float strength);
+void animst_exit(BasicSt* state, bool has_time);
+void animst_death(BasicSt* state);
+
 struct Mesh3DM {
     // The 3D renderer of this Mesh3D module.
     Render3DM render;
@@ -105,14 +108,6 @@ struct Mesh3DM {
     // The list of skeletons this module has.
     T3DSkeleton* skeletons;
 
-    // DEPRECATED - REMOVE THESE AFTER IMPLEMENTING ANIMATION STATES
-    int max_animations;
-    int num_animations;
-
-    SkinnedAnimation* animations;
-    SkinnedAnimation* looping;
-    SkinnedAnimation* oneshot;
-
     // The currently running drawing block for this module. (Base by default)
     rspq_block_t* block;
     // The base drawing block that was created for this module.
@@ -124,8 +119,6 @@ struct Mesh3DM {
 // Create a Mesh3D module, initializing its members.
 // Set trans_or and trans_xor to customize the color combiner for the trans_block.
 void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count);
-// A basic function to be called upon Mesh3DM life.
-void mesh3dm_life(Module* self, float _);
 // A basic function to be called upon Mesh3DM predraw.
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM draw.

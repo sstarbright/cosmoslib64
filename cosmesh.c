@@ -62,6 +62,62 @@ void render3dm_death(Module* self) {
     free(self);
 }
 
+void animst_create(StateM* machine, int slot, int trans_count, T3DModel* source, const char* name) {
+    basicst_create(machine, slot, trans_count);
+    BasicSt* state = machine->states[slot];
+    state->entry = animst_entry;
+    state->life = animst_life;
+    state->exit = animst_exit;
+    state->death = animst_death;
+    AnimSt* anim = (AnimSt*)state;
+    anim->anim = t3d_anim_create(source, name);
+    t3d_anim_attach(&anim->anim, machine->main_skel);
+    
+    if (machine->blend_skel) {
+        anim->blend_anim = t3d_anim_create(source, name);
+        t3d_anim_attach(&anim->blend_anim, machine->blend_skel);
+    }
+}
+void animst_entry(BasicSt* state, float time) {
+    AnimSt* anim = (AnimSt*)state;
+    T3DAnim* main_anim = &anim->anim;
+    t3d_skeleton_reset(state->module->main_skel);
+    if (time > .0f) {
+        t3d_anim_set_playing(main_anim, false);
+        t3d_anim_set_time(main_anim, time);
+
+        T3DAnim* blend_anim = &anim->blend_anim;
+        t3d_anim_set_playing(blend_anim, true);
+        t3d_anim_set_time(blend_anim, .0f);
+    } else {
+        t3d_anim_set_playing(main_anim, true);
+        t3d_anim_set_time(main_anim, .0f);
+    }
+}
+void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
+    AnimSt* anim = (AnimSt*)state;
+    T3DSkeleton* main_skeleton = state->module->main_skel;
+    if (is_first) {
+        t3d_anim_update(&anim->anim, delta);
+    } else {
+        t3d_anim_update(&anim->blend_anim, delta);
+        T3DSkeleton* blend_skeleton = state->module->blend_skel;
+        t3d_skeleton_blend(main_skeleton, blend_skeleton, main_skeleton, strength);
+    }
+}
+void animst_exit(BasicSt* state, bool has_time) {
+    AnimSt* anim = (AnimSt*)state;
+    if (!has_time) {
+        t3d_anim_set_playing(&anim->anim, false);
+    }
+}
+void animst_death(BasicSt* state) {
+    basicst_death(state);
+    AnimSt* anim = (AnimSt*)state;
+    t3d_anim_destroy(&anim->anim);
+    t3d_anim_destroy(&anim->blend_anim);
+}
+
 void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count) {
     if (model_cache) {
         if (model_slot >= 0 && model_slot < model_cache_size && model_cache[model_slot]) {
@@ -70,9 +126,6 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int ani
             ((Render3DM*)module)->predraw = mesh3dm_predraw;
             ((Render3DM*)module)->draw = mesh3dm_draw;
             ((Module*)module)->death = mesh3dm_death;
-            ((Module*)module)->life = mesh3dm_life;
-            module->looping = NULL;
-            module->oneshot = NULL;
 
             module->model = model_cache[model_slot];
             T3DModel* target_model = module->model->model;
@@ -82,22 +135,20 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int ani
                 t3d_mat4fp_identity(&module->matrix_buffer[i]);
             }
             
-            module->max_skeletons = skeleton_count;
-            module->max_animations = animation_count;
+            int total_skeletons = skeleton_count*2;
+            module->max_skeletons = total_skeletons;
             module->has_skeleton = false;
             if (skeleton_count > 0) {
-                module->skeletons = malloc(sizeof(T3DSkeleton) * skeleton_count);
-                module->skeletons[0] = t3d_skeleton_create_buffered(target_model, display_get_num_buffers());
+                module->skeletons = malloc(sizeof(T3DSkeleton) * total_skeletons);
                 module->has_skeleton = true;
-                module->num_skeletons = 1;
+                for (int i=0; i < total_skeletons; i += 2) {
+                    module->skeletons[i] = t3d_skeleton_create_buffered(target_model, display_get_num_buffers());
+                    module->skeletons[i+1] = t3d_skeleton_clone(&module->skeletons[i], false);
+                }
+                module->num_skeletons = total_skeletons;
             }
             else
                 module->skeletons = NULL;
-            if (animation_count > 0)
-                module->animations = malloc(sizeof(SkinnedAnimation) * animation_count);
-            else
-                module->animations = NULL;
-            module->num_animations = 0;
 
             for(uint32_t i = 0; i < target_model->chunkCount; i++) {
                 if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
@@ -108,8 +159,9 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int ani
             
             rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
-                if (module->has_skeleton)
+                if (module->has_skeleton) {
                     t3d_model_draw_skinned(target_model, &module->skeletons[0]);
+                }
                 else
                     t3d_model_draw(target_model);
                 t3d_matrix_pop(1);
@@ -130,25 +182,11 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int ani
         // Maybe switch this to an error model?
     }
 }
-void mesh3dm_life(Module* self, float deltaTime) {
-    Mesh3DM* mesh_module = (Mesh3DM*)self;
-    if (mesh_module->has_skeleton) {
-        if (mesh_module->oneshot) {
-            t3d_skeleton_reset(&mesh_module->skeletons[0]);
-            t3d_anim_update(&mesh_module->oneshot->animation, deltaTime);
-            if (!mesh_module->oneshot->animation.isPlaying) {
-                t3d_skeleton_reset(&mesh_module->skeletons[0]);
-                mesh_module->oneshot = NULL;
-            }
-        } else if (mesh_module->looping) {
-            t3d_anim_update(&mesh_module->looping->animation, deltaTime);
-        }
-    }
-}
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
-    if (mesh_module->has_skeleton)
+    if (mesh_module->has_skeleton) {
         t3d_skeleton_update(&mesh_module->skeletons[0]);
+    }
     memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.fp_matrix, sizeof(T3DMat4FP));
 }
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
@@ -175,8 +213,5 @@ void mesh3dm_simple_death(Mesh3DM* self) {
     self->model->uses -= 1;
     for (int i = 0; i < self->num_skeletons; i++) {
         t3d_skeleton_destroy(&self->skeletons[i]);
-    }
-    for (int i = 0; i < self->num_animations; i++) {
-        t3d_anim_destroy(&self->animations[i].animation);
     }
 }
