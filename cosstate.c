@@ -44,6 +44,13 @@ void statem_life(Module* self, float delta) {
                 module->current_state = current_state;
                 module->target_state = -1;
                 current_state->entry(current_state, transition->time);
+                
+                if (transition->time > .0f) {
+                    transition->elapsed = .0f;
+                } else {
+                    module->current_state = transition->to;
+                    current_state = module->current_state;
+                }
             }
         }
         current_state->life(current_state, delta, true, 1.f);
@@ -127,7 +134,7 @@ void statetr_create(StateM* machine, int from, int to, float time) {
             }
         }
         if (found_index >= 0) {
-            StateTr* transition = &from_state->transitions[to];
+            StateTr* transition = &from_state->transitions[found_index];
             transition->from = from_state;
             transition->to = machine->states[to];
             transition->param = statetr_param;
@@ -139,6 +146,7 @@ void statetr_create(StateM* machine, int from, int to, float time) {
             state->trans_count = 0;
             state->trans_ids = NULL;
             state->transitions = NULL;
+            state->leaving = false;
             state->entry = statetr_entry;
             state->life = statetr_life;
             state->exit = basicst_exit;
@@ -153,11 +161,6 @@ void statetr_entry(BasicSt* state, float time) {
     StateTr* transition = (StateTr*)state;
     transition->from->exit(transition->from, transition->time > .0f);
     transition->to->entry(transition->to, transition->time);
-    if (transition->time == .0f) {
-        StateM* module = state->module;
-        module->current_state = transition->to;
-    } else
-        transition->elapsed = .0f;
 }
 void statetr_life(BasicSt* state, float delta, bool is_first, float strength) {
     StateTr* transition = (StateTr*)state;

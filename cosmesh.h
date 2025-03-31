@@ -89,7 +89,7 @@ struct AnimSt {
     float time;
 };
 
-void animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name);
+AnimSt* animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name);
 void animst_entry(BasicSt* state, float time);
 void animst_life(BasicSt* state, float delta, bool is_first, float strength);
 void animst_exit(BasicSt* state, bool has_time);
@@ -102,8 +102,10 @@ struct AnimEv {
     bool free_data;
 };
 
-void animev_create(AnimSt* state, float time);
+AnimEv* animev_create(AnimSt* state, int slot, float time);
 void animev_action(AnimSt* state, AnimEv* event);
+
+void transev_action(AnimSt* state, AnimEv* event);
 
 struct Mesh3DM {
     // The 3D renderer of this Mesh3D module.

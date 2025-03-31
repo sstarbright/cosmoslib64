@@ -62,7 +62,7 @@ void render3dm_death(Module* self) {
     free(self);
 }
 
-void animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name) {
+AnimSt* animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name) {
     BasicSt* state = (BasicSt*)anim;
     basicst_create(machine, state, slot, trans_count);
     state->entry = animst_entry;
@@ -71,6 +71,7 @@ void animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int
     state->death = animst_death;
     anim->time = .0f;
     anim->anim = t3d_anim_create(source, name);
+    anim->event_count = ev_count;
     if (ev_count > 0) {
         anim->events = malloc(sizeof(AnimEv)*ev_count);
         anim->next_event = 0;
@@ -84,10 +85,11 @@ void animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int
         anim->blend_anim = t3d_anim_create(source, name);
         t3d_anim_attach(&anim->blend_anim, machine->blend_skel);
     }
+    return anim;
 }
 void animst_entry(BasicSt* state, float time) {
     basicst_entry(state, time);
-    state->leaving = false
+    state->leaving = false;
     AnimSt* anim = (AnimSt*)state;
     anim->time = .0f;
     if (anim->events) {
@@ -123,14 +125,28 @@ void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
     if (!state->leaving && anim->events) {
         float current_time = anim->time + target_anim->speed*delta;
 
-        // Add while loop here to iterate until run out of events
-        // Add if statement here to switch next_event back to 0 if animation time is less than the state's registered time (means that the animation looped!)
+        int next_event_id = anim->next_event;
+        int event_count = anim->event_count;
+        AnimEv* events = anim->events;
+        AnimEv* next_event;
+        while (next_event_id < event_count && current_time >= (next_event = &events[next_event_id])->time) {
+            next_event->action(anim, next_event);
+            next_event_id++;
+        }
+
+        if (target_anim->time < anim->time) {
+            next_event_id = 0;
+        }
+
+        anim->time = target_anim->time;
+        anim->next_event = next_event_id;
     }
 }
 void animst_exit(BasicSt* state, bool has_time) {
     basicst_exit(state, has_time);
     AnimSt* anim = (AnimSt*)state;
     if (!has_time) {
+        debugf("Exiting without time!\n");
         t3d_anim_set_playing(&anim->anim, false);
     }
 }
@@ -142,12 +158,29 @@ void animst_death(BasicSt* state) {
     if (anim->events) {
         AnimEv* events = anim->events;
         for (int i = 0; i < anim->event_count; i++) {
-            AnimEv* event = events[i];
-            if (event.free_data && event.data)
-                free(event.data);
+            AnimEv* event = &events[i];
+            if (event->free_data && event->data)
+                free(event->data);
         }
         free(events);
     }
+}
+
+AnimEv* animev_create(AnimSt* state, int slot, float time) {
+    AnimEv* event = &state->events[slot];
+    event->action = animev_action;
+    event->time = time;
+    event->free_data = false;
+    event->data = NULL;
+    return event;
+}
+void animev_action(AnimSt* _, AnimEv* __) {
+    debugf("EMPTY EVENT CALLED, WHY ARE YOU DOING THIS???? :(\n");
+}
+
+void transev_action(AnimSt* state, AnimEv* event) {
+    debugf("Switch to state %i!\n", (int)event->data);
+    state->state.module->target_state = (int)event->data;
 }
 
 void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count) {
