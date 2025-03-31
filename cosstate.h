@@ -27,6 +27,7 @@ struct BasicSt {
     StateTr* transitions;
     int* trans_ids;
     int trans_count;
+    bool leaving;
     void (*entry)(BasicSt* state, float time);
     void (*life)(BasicSt* state, float delta, bool is_first, float strength);
     void (*exit)(BasicSt* state, bool has_time);
@@ -42,12 +43,12 @@ struct StateTr {
     bool (*param)(BasicSt* from, BasicSt* to);
 };
 
-void statem_create(StateM* module, int state_count, int state_size, void* states);
+void statem_create(StateM* module, int state_count, int state_size);
 void statem_life(Module* self, float delta);
 void statem_death(Module* self);
 void statem_simple_death(StateM* self);
 
-void basicst_create(StateM* machine, int slot, int trans_count);
+void basicst_create(StateM* machine, BasicSt* state, int slot, int trans_count);
 void basicst_entry(BasicSt* state, float time);
 void basicst_life(BasicSt* state, float delta, bool is_first, float strength);
 void basicst_exit(BasicSt* state, bool has_time);

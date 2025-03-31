@@ -62,15 +62,22 @@ void render3dm_death(Module* self) {
     free(self);
 }
 
-void animst_create(StateM* machine, int slot, int trans_count, T3DModel* source, const char* name) {
-    basicst_create(machine, slot, trans_count);
-    BasicSt* state = machine->states[slot];
+void animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name) {
+    BasicSt* state = (BasicSt*)anim;
+    basicst_create(machine, state, slot, trans_count);
     state->entry = animst_entry;
     state->life = animst_life;
     state->exit = animst_exit;
     state->death = animst_death;
-    AnimSt* anim = (AnimSt*)state;
+    anim->time = .0f;
     anim->anim = t3d_anim_create(source, name);
+    if (ev_count > 0) {
+        anim->events = malloc(sizeof(AnimEv)*ev_count);
+        anim->next_event = 0;
+    } else {
+        anim->events = NULL;
+        anim->next_event = -1;
+    }
     t3d_anim_attach(&anim->anim, machine->main_skel);
     
     if (machine->blend_skel) {
@@ -79,7 +86,13 @@ void animst_create(StateM* machine, int slot, int trans_count, T3DModel* source,
     }
 }
 void animst_entry(BasicSt* state, float time) {
+    basicst_entry(state, time);
+    state->leaving = false
     AnimSt* anim = (AnimSt*)state;
+    anim->time = .0f;
+    if (anim->events) {
+        anim->next_event = 0;
+    }
     T3DAnim* main_anim = &anim->anim;
     t3d_skeleton_reset(state->module->main_skel);
     if (time > .0f) {
@@ -97,15 +110,25 @@ void animst_entry(BasicSt* state, float time) {
 void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
     AnimSt* anim = (AnimSt*)state;
     T3DSkeleton* main_skeleton = state->module->main_skel;
+    T3DAnim* target_anim;
     if (is_first) {
-        t3d_anim_update(&anim->anim, delta);
+        target_anim = &anim->anim;
+        t3d_anim_update(target_anim, delta);
     } else {
-        t3d_anim_update(&anim->blend_anim, delta);
+        target_anim = &anim->blend_anim;
+        t3d_anim_update(target_anim, delta);
         T3DSkeleton* blend_skeleton = state->module->blend_skel;
         t3d_skeleton_blend(main_skeleton, blend_skeleton, main_skeleton, strength);
     }
+    if (!state->leaving && anim->events) {
+        float current_time = anim->time + target_anim->speed*delta;
+
+        // Add while loop here to iterate until run out of events
+        // Add if statement here to switch next_event back to 0 if animation time is less than the state's registered time (means that the animation looped!)
+    }
 }
 void animst_exit(BasicSt* state, bool has_time) {
+    basicst_exit(state, has_time);
     AnimSt* anim = (AnimSt*)state;
     if (!has_time) {
         t3d_anim_set_playing(&anim->anim, false);
@@ -116,6 +139,15 @@ void animst_death(BasicSt* state) {
     AnimSt* anim = (AnimSt*)state;
     t3d_anim_destroy(&anim->anim);
     t3d_anim_destroy(&anim->blend_anim);
+    if (anim->events) {
+        AnimEv* events = anim->events;
+        for (int i = 0; i < anim->event_count; i++) {
+            AnimEv* event = events[i];
+            if (event.free_data && event.data)
+                free(event.data);
+        }
+        free(events);
+    }
 }
 
 void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count) {

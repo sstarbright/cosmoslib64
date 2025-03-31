@@ -4,7 +4,7 @@
 #define MIN(a,b) (a) < (b) ? (a) : (b)
 #define CLAMP(x, min, max) MIN(MAX((x), (min)), (max))
 
-void statem_create(StateM* module, int state_count, int state_size, void* states) {
+void statem_create(StateM* module, int state_count, int state_size) {
     m_create((Module*)module);
     
     ((Module*)module)->life = statem_life;
@@ -17,9 +17,9 @@ void statem_create(StateM* module, int state_count, int state_size, void* states
     module->blend_skel = NULL;
 
     module->states = malloc(sizeof(void*) * state_count);
-    BasicSt** state_pointers = module->states;
+    BasicSt** states = module->states;
     for (int i = 0; i < module->state_count; i++) {
-        state_pointers[i] = (BasicSt*)(states+(state_size*i));
+        states[i] = NULL;
     }
 }
 void statem_life(Module* self, float delta) {
@@ -64,22 +64,25 @@ void statem_simple_death(StateM* self) {
     if (self->state_count > 0) {
         BasicSt** states = self->states;
         for (int i = 0; i < self->state_count; i++) {
-            states[i]->death(states[i]);
+            if (states[i]) {
+                states[i]->death(states[i]);
+                free(states[i]);
+            }
         }
-        free(self->states[0]);
         free(self->states);
     }
 }
 
 
-void basicst_create(StateM* machine, int slot, int trans_count) {
-    BasicSt* state = machine->states[slot];
+void basicst_create(StateM* machine, BasicSt* state, int slot, int trans_count) {
+    machine->states[slot] = state;
     state->module = machine;
     state->id = slot;
     state->entry = basicst_entry;
     state->life = basicst_life;
     state->exit = basicst_exit;
     state->death = basicst_death;
+    state->leaving = true;
 
     state->trans_count = trans_count;
     if (trans_count > 0) {
@@ -95,13 +98,13 @@ void basicst_create(StateM* machine, int slot, int trans_count) {
     }
 }
 void basicst_entry(BasicSt* state, float time) {
-
+    state->leaving = false;
 }
 void basicst_life(BasicSt* state, float delta, bool is_first, float strength) {
 
 }
 void basicst_exit(BasicSt* state, bool has_time) {
-
+    state->leaving = true;
 }
 void basicst_death(BasicSt* state) {
     if (state->trans_count > 0) {

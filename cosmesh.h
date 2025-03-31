@@ -22,6 +22,7 @@ typedef struct LagBone3DM LagBone3DM;
 // Has a basic function pointer for draw that may be "overloaded" for varying behaviours
 typedef struct Render3DM Render3DM;
 typedef struct AnimSt AnimSt;
+typedef struct AnimEv AnimEv;
 // A structure that uses a Render3D Module to draw a mesh with Primitive Color and 3D transformations.
 typedef struct Mesh3DM Mesh3DM;
 
@@ -82,13 +83,27 @@ struct AnimSt {
     BasicSt state;
     T3DAnim anim;
     T3DAnim blend_anim;
+    AnimEv* events;
+    int event_count;
+    int next_event;
+    float time;
 };
 
-void animst_create(StateM* machine, int slot, int trans_count, T3DModel* source, const char* name);
+void animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name);
 void animst_entry(BasicSt* state, float time);
 void animst_life(BasicSt* state, float delta, bool is_first, float strength);
 void animst_exit(BasicSt* state, bool has_time);
 void animst_death(BasicSt* state);
+
+struct AnimEv {
+    float time;
+    void (*action)(AnimSt* state, AnimEv* event);
+    void* data;
+    bool free_data;
+};
+
+void animev_create(AnimSt* state, float time);
+void animev_action(AnimSt* state, AnimEv* event);
 
 struct Mesh3DM {
     // The 3D renderer of this Mesh3D module.
