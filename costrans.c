@@ -5,15 +5,9 @@ void trans3dm_create(Trans3DM* module) {
     ((Module*)module)->death = trans3dm_death;
     module->matup = trans3dm_module_matup;
 
-    module->position.x = 0.f;
-    module->position.y = 0.f;
-    module->position.z = 0.f;
-    module->scale.x = 1.f;
-    module->scale.y = 1.f;
-    module->scale.z = 1.f;
-    module->rotation.x = 0.f;
-    module->rotation.y = 0.f;
-    module->rotation.z = 0.f;
+    module->position = (T3DVec3){{0.f, 0.f, 0.f}};
+    module->scale = (T3DVec3){{1.f, 1.f, 1.f}};
+    t3d_quat_identity(&module->rotation);
 
     module->fp_matrix = malloc(sizeof(T3DMat4FP));
     module->matrix = malloc(sizeof(T3DMat4));
@@ -55,7 +49,7 @@ void trans3dm_update_matrix(Trans3DM* module) {
 void trans3dm_update_matrix_from_ref(Trans3DM* module, T3DMat4* parent_mat) {
     T3DMat4 local_mat;
     T3DMat4* global_mat = module->matrix;
-    t3d_mat4_from_srt_euler(&local_mat, module->scale.v, module->rotation.v, module->position.v);
+    t3d_mat4_from_srt(&local_mat, module->scale.v, module->rotation.v, module->position.v);
     t3d_mat4_mul(global_mat, parent_mat, &local_mat);
 
     Trans3DM* start_child_module = module->child;

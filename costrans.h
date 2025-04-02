@@ -20,7 +20,7 @@ struct Trans3DM {
     // The local scale of this module.
     T3DVec3 scale;
     // The local rotation of this module.
-    T3DVec3 rotation;
+    T3DQuat rotation;
     // The global matrix (fixed-point) of this module.
     T3DMat4FP* fp_matrix;
     // The global matrix of this module.

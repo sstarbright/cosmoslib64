@@ -11,8 +11,8 @@ void camera3dm_create(Camera3DM* module) {
     ((Render3DM*)module)->draw = camera3dm_draw;
 
     module->viewport = t3d_viewport_create();
-    module->fov = T3D_DEG_TO_RAD(85.0f);
-    module->near = 10.f;
+    module->fov = 0.527423705125325;
+    module->near = 1.f;
     module->far = 150.f;
     t3d_mat4_identity(&module->matrix);
 }

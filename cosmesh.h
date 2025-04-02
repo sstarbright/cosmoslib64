@@ -54,7 +54,7 @@ void cosmesh_init();
 // Creates the Cosmos Mesh model cache, with a specific number of models.
 void model_cache_create(int size);
 // Loads a model into the model cache, at a specific slot.
-CachedModel* load_model_into_cache(const char* location, int slot);
+CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded);
 // Clears the model cache.
 void model_cache_clear();
 
@@ -106,6 +106,7 @@ AnimEv* animev_create(AnimSt* state, int slot, float time);
 void animev_action(AnimSt* state, AnimEv* event);
 
 void transev_action(AnimSt* state, AnimEv* event);
+void audioev_action(AnimSt* state, AnimEv* event);
 
 struct Mesh3DM {
     // The 3D renderer of this Mesh3D module.

@@ -14,11 +14,23 @@ void model_cache_create(int size) {
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, int slot) {
+CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
-        cached_model->model = t3d_model_load(location);
+        T3DModel* target_model = t3d_model_load(location);
+        cached_model->model = target_model;
         model_cache[slot] = cached_model;
+
+        if (unshaded) {
+            for(uint32_t i = 0; i < target_model->chunkCount; i++) {
+                if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
+                    uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
+                    T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
+                    mat->renderFlags |= T3D_FLAG_NO_LIGHT;
+                }
+            }
+        }
+
         return cached_model;
     }
     char debug_log_message[40];
@@ -71,6 +83,7 @@ AnimSt* animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, 
     state->death = animst_death;
     anim->time = .0f;
     anim->anim = t3d_anim_create(source, name);
+    t3d_anim_attach(&anim->anim, machine->main_skel);
     anim->event_count = ev_count;
     if (ev_count > 0) {
         anim->events = malloc(sizeof(AnimEv)*ev_count);
@@ -79,7 +92,6 @@ AnimSt* animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, 
         anim->events = NULL;
         anim->next_event = -1;
     }
-    t3d_anim_attach(&anim->anim, machine->main_skel);
     
     if (machine->blend_skel) {
         anim->blend_anim = t3d_anim_create(source, name);
@@ -114,9 +126,11 @@ void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
     T3DSkeleton* main_skeleton = state->module->main_skel;
     T3DAnim* target_anim;
     if (is_first) {
+        debugf("State %i is first.\n", state->id);
         target_anim = &anim->anim;
         t3d_anim_update(target_anim, delta);
     } else {
+        debugf("State %i is second.\n", state->id);
         target_anim = &anim->blend_anim;
         t3d_anim_update(target_anim, delta);
         T3DSkeleton* blend_skeleton = state->module->blend_skel;
@@ -179,8 +193,10 @@ void animev_action(AnimSt* _, AnimEv* __) {
 }
 
 void transev_action(AnimSt* state, AnimEv* event) {
-    debugf("Switch to state %i!\n", (int)event->data);
     state->state.module->target_state = (int)event->data;
+}
+void audioev_action(AnimSt* state, AnimEv* event) {
+    
 }
 
 void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count) {
@@ -219,6 +235,7 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int ani
                 if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
                   uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
                   T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
+                  debugf("Material %s\n", mat->name);
                 }
             }
             
