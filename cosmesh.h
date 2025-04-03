@@ -136,7 +136,7 @@ struct Mesh3DM {
 
 // Create a Mesh3D module, initializing its members.
 // Set trans_or and trans_xor to customize the color combiner for the trans_block.
-void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count);
+void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count);
 // A basic function to be called upon Mesh3DM predraw.
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM draw.

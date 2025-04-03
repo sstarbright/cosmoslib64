@@ -196,13 +196,18 @@ void audioev_action(AnimSt* state, AnimEv* event) {
     
 }
 
-void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count, int animation_count) {
+void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count) {
     if (model_cache) {
         if (model_slot >= 0 && model_slot < model_cache_size && model_cache[model_slot]) {
-            render3dm_create((Render3DM*)module);
+            Render3DM* render = (Render3DM*)module;
+            render3dm_create(render);
             
-            ((Render3DM*)module)->predraw = mesh3dm_predraw;
-            ((Render3DM*)module)->draw = mesh3dm_draw;
+            Trans3DM* trans = (Trans3DM*)module;
+            trans->scale = (T3DVec3){{ONE_SCALE, ONE_SCALE, ONE_SCALE}};
+            trans3dm_update_matrix(trans);
+            
+            (render)->predraw = mesh3dm_predraw;
+            (render)->draw = mesh3dm_draw;
             ((Module*)module)->death = mesh3dm_death;
 
             module->model = model_cache[model_slot];

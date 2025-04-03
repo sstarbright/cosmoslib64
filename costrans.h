@@ -6,6 +6,8 @@
 #include <t3d/t3d.h>
 #include <t3d/t3dmath.h>
 
+#define ONE_SCALE 1.f/64.f
+
 // A structure that stores 3D transformations, transforms them into 4x4 Matrices, and propagates changes down to each of their children.
 // If changes are made to the local transformations of a parent and their children, only the parent needs to 
 typedef struct Trans3DM Trans3DM;

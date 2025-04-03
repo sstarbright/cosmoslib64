@@ -164,13 +164,11 @@ void m_simple_kill(void* module_pointer) {
 }
 
 void m_active(Module* self) {
-    self->enabled = true;
 }
 void m_life(Module* self, float delta) {
 
 }
 void m_inactive(Module* self) {
-    self->enabled = false;
 }
 void m_death(Module* module) {
     free(module);
