@@ -110,8 +110,8 @@ void animst_entry(BasicSt* state, float time) {
     T3DAnim* main_anim = &anim->anim;
     t3d_skeleton_reset(state->module->main_skel);
     if (time > .0f) {
-        t3d_anim_set_playing(main_anim, false);
-        t3d_anim_set_time(main_anim, time);
+        t3d_anim_set_playing(main_anim, true);
+        t3d_anim_set_time(main_anim, fm_fmodf(time, main_anim->animRef->duration));
 
         T3DAnim* blend_anim = &anim->blend_anim;
         t3d_anim_set_playing(blend_anim, true);
@@ -126,15 +126,13 @@ void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
     T3DSkeleton* main_skeleton = state->module->main_skel;
     T3DAnim* target_anim;
     if (is_first) {
-        debugf("State %i is first.\n", state->id);
         target_anim = &anim->anim;
         t3d_anim_update(target_anim, delta);
     } else {
-        debugf("State %i is second.\n", state->id);
         target_anim = &anim->blend_anim;
         t3d_anim_update(target_anim, delta);
         T3DSkeleton* blend_skeleton = state->module->blend_skel;
-        t3d_skeleton_blend(main_skeleton, blend_skeleton, main_skeleton, strength);
+        t3d_skeleton_blend(main_skeleton, main_skeleton, blend_skeleton, strength);
     }
     if (!state->leaving && anim->events) {
         float current_time = anim->time + target_anim->speed*delta;
@@ -160,7 +158,6 @@ void animst_exit(BasicSt* state, bool has_time) {
     basicst_exit(state, has_time);
     AnimSt* anim = (AnimSt*)state;
     if (!has_time) {
-        debugf("Exiting without time!\n");
         t3d_anim_set_playing(&anim->anim, false);
     }
 }
@@ -274,9 +271,9 @@ void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
     if (mesh_module->block) {
+        t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
         if (mesh_module->has_skeleton)
             t3d_skeleton_use(&mesh_module->skeletons[0]);
-        t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
         rdpq_set_prim_color(self->color);
         rspq_block_run(mesh_module->block);
     }
