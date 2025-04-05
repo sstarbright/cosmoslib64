@@ -2,8 +2,23 @@
 #include <libdragon.h>
 
 void stage_init(Stage* stage, int index_size) {
+    stage->enabled = true;
+    stage->visible = true;
+    stage->ambient_color = RGBA32(0xFF, 0xFF, 0xFF, 0xFF);
+    stage->fog_color = RGBA32(0xFF, 0xFF, 0xFF, 0xFF);
+    stage->is_fog = false;
+    stage->fog_start = 5.f;
+    stage->fog_end = 10.f;
+    
     uint32_t index_mem_size = sizeof(void*)*index_size;
     stage->actor = NULL;
+    stage->camera = NULL;
+    stage->light = NULL;
+    stage->light_count = 0;
+    stage->current_light = 0;
+    stage->draw = NULL;
+    stage->prev = stage;
+    stage->next = stage;
     if (index_size > 0)
         stage->actor_table = malloc(index_mem_size);
     else
@@ -17,6 +32,7 @@ void stage_add_actor(Stage* stage, Actor* actor, int slot) {
     } else {
         stage->actor = actor;
     }
+    actor->stage = stage;
     if (slot >= 0) {
         if (stage->actor_table) {
             if(!stage->actor_table[slot]) {
@@ -40,7 +56,70 @@ void stage_life(Stage* stage, float delta) {
     }
     while(current_actor != stage->actor);
 }
+void stage_predraw(Stage* self, float delta, uint32_t matrix_id) {
+    Render3DM* current_draw = self->draw;
+    if (current_draw) {
+        do {
+            if (((Module*)current_draw)->enabled) {
+                current_draw->predraw(current_draw, delta, matrix_id);
+                current_draw = current_draw->next;
+            }
+        }
+        while(current_draw != self->draw);
+    }
+}
+void stage_draw(Stage* self, float delta, uint32_t matrix_id) {
+    self->current_light = 0;
+    
+    // Draw Camera
+    Render3DM* current_draw = (Render3DM*)self->camera;
+    if (current_draw) {
+        current_draw->draw(current_draw, delta, matrix_id);
+    }
+
+    t3d_screen_clear_depth();
+
+    rdpq_mode_fog(RDPQ_FOG_STANDARD);
+    rdpq_set_fog_color(self->fog_color);
+
+    t3d_fog_set_range(self->fog_start, self->fog_end);
+    t3d_fog_set_enabled(true);
+    
+    t3d_light_set_count(self->light_count);
+
+    // Draw Lights
+    current_draw = self->light;
+
+    if (current_draw) {
+        do {
+            if (((Module*)current_draw)->enabled) {
+                current_draw->draw(current_draw, delta, matrix_id);
+                current_draw = current_draw->next;
+            }
+        }
+        while(current_draw != self->light);
+    }
+
+    // Draw Meshes
+    current_draw = self->draw;
+
+    if (current_draw) {
+        do {
+            if (((Module*)current_draw)->enabled) {
+                current_draw->draw(current_draw, delta, matrix_id);
+                current_draw = current_draw->next;
+            }
+        }
+        while(current_draw != self->draw);
+    }
+
+    t3d_light_set_ambient(&self->ambient_color.r);
+}
 void stage_kill(Stage* stage) {
+    linked_pop_from_list(stage, offsetof(Stage, prev), offsetof(Stage, next));
+    stage_simple_kill(stage);
+}
+void stage_simple_kill(Stage* stage) {
     if (stage->actor) {
         linked_kill_list(stage->actor, actor_simple_kill, offsetof(Actor, prev), offsetof(Actor, next));
     }
@@ -49,7 +128,6 @@ void stage_kill(Stage* stage) {
         free(stage->actor_table);
 
     free(stage);
-    stage = NULL;
 }
 
 void actor_init(Actor* actor, int index_size) {

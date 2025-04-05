@@ -4,10 +4,6 @@
 #include <libdragon.h>
 #include "cosmesh.h"
 
-// A structure that manages and sets a Viewport for T3D.
-// Can draw a Viewport.
-typedef struct Camera3DM Camera3DM;
-
 struct Camera3DM {
     // A render module.
     Render3DM render;

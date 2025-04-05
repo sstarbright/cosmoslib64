@@ -3,16 +3,6 @@
 
 #include <libdragon.h>
 
-// An object that can be added to a linked list.
-typedef struct LinkedMember LinkedMember;
-
-struct LinkedMember {
-    // The previous LinkedMember.
-    LinkedMember* prev;
-    // The next LinkedMember.
-    LinkedMember* next;
-};
-
 // Add an item to a linked list.
 void linked_add_to_list(void* last_item, void* first_item, void* item_to_add, int p_offset, int n_offset);
 // Remove an item from a linked list.

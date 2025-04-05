@@ -3,6 +3,7 @@
 
 #include "coslink.h"
 #include <libdragon.h>
+#include <t3d/t3d.h>
 
 // A structure that holds Actors in a linked list.
 // Allows important Actors to be indexed for quick access.
@@ -13,22 +14,51 @@ typedef struct Actor Actor;
 // A structure that allows for different behavioural code to be attached to actors.
 // Has basic function pointers that may be "overloaded" for varying behaviours
 typedef struct Module Module;
+// A structure that stores 3D transformations, transforms them into 4x4 Matrices, and propagates changes down to each of their children.
+// If changes are made to the local transformations of a parent and their children, only the parent needs to 
+typedef struct Trans3DM Trans3DM;
+// A structure that stores 2D transformations.
+typedef struct Trans2DM Trans2DM;
+// A structure that allows for different behavioural code to be called when drawing a renderable module.
+// Has a basic function pointer for draw that may be "overloaded" for varying behaviours
+typedef struct Render3DM Render3DM;
+// A structure that manages and sets a Viewport for T3D.
+// Can draw a Viewport.
+typedef struct Camera3DM Camera3DM;
 
 struct Stage {
+    bool enabled;
+    bool visible;
     // The first Actor in the linked list.
     Actor* actor;
+    Camera3DM* camera;
+    Render3DM* light;
+    uint32_t light_count;
+    uint32_t current_light;
+    Render3DM* draw;
     // The hashtable that stores indexed Actors.
     Actor** actor_table;
+    color_t ambient_color;
+    color_t fog_color;
+    bool is_fog;
+    float fog_start;
+    float fog_end;
+    Stage* prev;
+    Stage* next;
 };
 
 // Initialize a Stage with basic data.
 void stage_init(Stage* stage, int index_size);
 // Add an Actor to this Stage's linked list (and Actor Table if slot > -1)
 void stage_add_actor(Stage* stage, Actor* actor, int slot);
+void stage_add_draw(Stage* stage, Render3DM* draw);
 // Update a Stage and its Actors.
 void stage_life(Stage* self, float delta);
+void stage_predraw(Stage* self, float delta, uint32_t matrix_id);
+void stage_draw(Stage* self, float delta, uint32_t matrix_id);
 // Kill a Stage and its Actors.
 void stage_kill(Stage* stage);
+void stage_simple_kill(Stage* stage);
 
 struct Actor {
     // The Stage that this Actor is on.
@@ -104,5 +134,44 @@ void m_life(Module* self, float delta);
 void m_inactive(Module* self);
 // A basic function to be called upon Module death.
 void m_death(Module* self);
+
+struct Trans3DM {
+    // The base module.
+    Module module;
+    // The local position of this module.
+    T3DVec3 position;
+    // The local scale of this module.
+    T3DVec3 scale;
+    // The local rotation of this module.
+    T3DQuat rotation;
+    // The global matrix (fixed-point) of this module.
+    T3DMat4FP* fp_matrix;
+    // The global matrix of this module.
+    T3DMat4* matrix;
+    // The parent Trans3D of this module.
+    Trans3DM* parent;
+    // The child Trans3D linked list of this module.
+    Trans3DM* child;
+    // The previous Trans3D in this linked list.
+    Trans3DM* prev;
+    // The next Trans3D in this linked list.
+    Trans3DM* next;
+    // The function called when this Trans3D module's matrix is updated.
+    void (*matup)(Trans3DM* self, const T3DMat4* global_mat);
+};
+
+struct Render3DM {
+    // The 3D transform of this Render3D module.
+    Trans3DM transform;
+    // The output color of this Render3D module.
+    color_t color;
+    // The function to be called just before drawing begins.
+    // (Useful in collectively updating everything related to rendering before drawing pipeline begins)
+    void (*predraw)(Render3DM* self, float delta, uint32_t frame_buffer);
+    // The function called when this Render3D Module is drawn.
+    void (*draw)(Render3DM* self, float delta, uint32_t frame_buffer);
+    Render3DM* prev;
+    Render3DM* next;
+};
 
 #endif

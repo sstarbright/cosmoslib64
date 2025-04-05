@@ -62,8 +62,10 @@ void render3dm_create(Render3DM* module) {
     module->color = (color_t){0xFF, 0xFF, 0xFF, 0xFF};
     module->predraw = render3dm_predraw;
     module->draw = render3dm_draw;
+    module->prev = module;
+    module->next = module;
 }
-void render3dm_predraw(Render3DM* module, float delta, uint32_t frame_buffer) {
+void render3dm_predraw(Render3DM* _, float __, uint32_t ___) {
 
 }
 void render3dm_draw(Render3DM* _, float __, uint32_t ___) {
@@ -71,6 +73,9 @@ void render3dm_draw(Render3DM* _, float __, uint32_t ___) {
 }
 void render3dm_death(Module* self) {
     trans3dm_simple_death((Trans3DM*)self);
+
+    linked_pop_from_list(self, offsetof(Render3DM, prev), offsetof(Render3DM, next));
+
     free(self);
 }
 
@@ -196,7 +201,7 @@ void audioev_action(AnimSt* state, AnimEv* event) {
     
 }
 
-void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count) {
+void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_count) {
     if (model_cache) {
         if (model_slot >= 0 && model_slot < model_cache_size && model_cache[model_slot]) {
             Render3DM* render = (Render3DM*)module;
@@ -251,6 +256,12 @@ void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count) {
                 t3d_matrix_pop(1);
             module->base_block = rspq_block_end();
             module->block = module->base_block;
+
+            if (stage->draw) {
+                linked_add_to_list(stage->draw->prev, stage->draw, module, offsetof(Render3DM, prev), offsetof(Render3DM, next));
+            } else {
+                stage->draw = (Render3DM*)module;
+            }
         } else {
             free(module);
             module = NULL;

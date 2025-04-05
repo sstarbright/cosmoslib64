@@ -2,42 +2,10 @@
 #define __COSTRANS_H
 
 #include <libdragon.h>
-#include "cosams.h"
-#include <t3d/t3d.h>
 #include <t3d/t3dmath.h>
+#include "cosams.h"
 
 #define ONE_SCALE 1.f/64.f
-
-// A structure that stores 3D transformations, transforms them into 4x4 Matrices, and propagates changes down to each of their children.
-// If changes are made to the local transformations of a parent and their children, only the parent needs to 
-typedef struct Trans3DM Trans3DM;
-// A structure that stores 2D transformations.
-typedef struct Trans2DM Trans2DM;
-
-struct Trans3DM {
-    // The base module.
-    Module module;
-    // The local position of this module.
-    T3DVec3 position;
-    // The local scale of this module.
-    T3DVec3 scale;
-    // The local rotation of this module.
-    T3DQuat rotation;
-    // The global matrix (fixed-point) of this module.
-    T3DMat4FP* fp_matrix;
-    // The global matrix of this module.
-    T3DMat4* matrix;
-    // The parent Trans3D of this module.
-    Trans3DM* parent;
-    // The child Trans3D linked list of this module.
-    Trans3DM* child;
-    // The previous Trans3D in this linked list.
-    Trans3DM* prev;
-    // The next Trans3D in this linked list.
-    Trans3DM* next;
-    // The function called when this Trans3D module's matrix is updated.
-    void (*matup)(Trans3DM* self, const T3DMat4* global_mat);
-};
 
 // Create a Trans3D module, initializing its members.
 void trans3dm_create(Trans3DM* module);

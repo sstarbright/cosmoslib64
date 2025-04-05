@@ -18,9 +18,6 @@ typedef struct Bone3DM Bone3DM;
 // A structure that delays a T3DBone's transformations.
 // For use in making "streaking" effects, often for weapons or fast-moving objects.
 typedef struct LagBone3DM LagBone3DM;
-// A structure that allows for different behavioural code to be called when drawing a renderable module.
-// Has a basic function pointer for draw that may be "overloaded" for varying behaviours
-typedef struct Render3DM Render3DM;
 typedef struct AnimSt AnimSt;
 typedef struct AnimEv AnimEv;
 // A structure that uses a Render3D Module to draw a mesh with Primitive Color and 3D transformations.
@@ -57,18 +54,6 @@ void model_cache_create(int size);
 CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded);
 // Clears the model cache.
 void model_cache_clear();
-
-struct Render3DM {
-    // The 3D transform of this Render3D module.
-    Trans3DM transform;
-    // The output color of this Render3D module.
-    color_t color;
-    // The function to be called just before drawing begins.
-    // (Useful in collectively updating everything related to rendering before drawing pipeline begins)
-    void (*predraw)(Render3DM* self, float delta, uint32_t frame_buffer);
-    // The function called when this Render3D Module is drawn.
-    void (*draw)(Render3DM* self, float delta, uint32_t frame_buffer);
-};
 
 // Create a Render3D module, initializing its members.
 void render3dm_create(Render3DM* module);
@@ -136,7 +121,7 @@ struct Mesh3DM {
 
 // Create a Mesh3D module, initializing its members.
 // Set trans_or and trans_xor to customize the color combiner for the trans_block.
-void mesh3dm_create(Mesh3DM* module, int model_slot, int skeleton_count);
+void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_count);
 // A basic function to be called upon Mesh3DM predraw.
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM draw.
