@@ -1,17 +1,12 @@
 #include "coslib.h"
 #include <libdragon.h>
 
-float lastTime = .0f;
-float deltaTime = .0f;
-
 joypad_inputs_t joy_pad;
 joypad_buttons_t joy_btn;
 
 Stage* layer;
 
 color_t back_color;
-
-float get_time_s() { return (float)((double)get_ticks_ms() / 1000.0); }
 
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter) {
     debug_init_isviewer();
@@ -26,7 +21,7 @@ void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_d
     t3d_init((T3DInitParams){});
 
     cosmesh_init();
-    lastTime = get_time_s() - (1.0f / 60.0f);
+    
     layer = NULL;
     back_color = RGBA16(0x00, 0x00, 0x00, 0xFF);
 }
@@ -37,16 +32,12 @@ void coslib_add_stage(Stage* stage) {
         layer = stage;
     }
 }
-void coslib_life(uint32_t frame) {
+void coslib_life(uint32_t frame, float deltaTime) {
     cossnd_life();
     joypad_poll();
     joy_pad = joypad_get_inputs(JOYPAD_PORT_1);
     
     joy_btn = joypad_get_buttons_pressed(JOYPAD_PORT_1);
-
-    float newTime = get_time_s();
-    deltaTime = newTime - lastTime;
-    lastTime = newTime;
 
     Stage* current_stage = layer;
     do {
@@ -57,7 +48,7 @@ void coslib_life(uint32_t frame) {
     }
     while(current_stage != layer);
 }
-void coslib_draw(uint32_t frame) {
+void coslib_draw(uint32_t frame, float deltaTime) {
     uint32_t matrix_id = frame % display_get_num_buffers();
 
     Stage* current_stage = layer;
