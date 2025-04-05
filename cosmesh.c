@@ -113,7 +113,6 @@ void animst_entry(BasicSt* state, float time) {
         anim->next_event = 0;
     }
     T3DAnim* main_anim = &anim->anim;
-    t3d_skeleton_reset(state->module->main_skel);
     if (time > .0f) {
         t3d_anim_set_playing(main_anim, true);
         t3d_anim_set_time(main_anim, fm_fmodf(time, main_anim->animRef->duration));

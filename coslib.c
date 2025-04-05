@@ -80,6 +80,12 @@ void coslib_draw(uint32_t frame, float deltaTime) {
 void coslib_set_back_color(color_t color) {
     back_color = color;
 }
+joypad_inputs_t cosjoy_get_pad() {
+    return joy_pad;
+}
+joypad_buttons_t cosjoy_get_btn() {
+    return joy_btn;
+}
 void coslib_kill() {
     Stage* current_stage = layer;
     do {
