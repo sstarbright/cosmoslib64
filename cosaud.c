@@ -59,7 +59,7 @@ void cosaud_release(AudChannel* channel, int count) {
         channels[i].is_reserved = false;
     }
 }
-void cosaud_play(wav64_t* sound, int channel) {
+void cosaud_play(wav64_t* sound, int channel, float vol, float pan) {
     if (channel < 0) {
         int try_channel = (last_channel + 1)%channel_count;
 
@@ -71,20 +71,22 @@ void cosaud_play(wav64_t* sound, int channel) {
         }
 
         last_channel = channel;
-        debugf("%i\n", channel);
 
         if (channel < 0)
             debugf("Sound %p failed to play! (All channels reserved!)", sound);
-        else
+        else {
             wav64_play(sound, channel);
+            mixer_ch_set_vol_pan(channel, vol, pan);
+        }
     } else {
         wav64_play(sound, channel);
+        mixer_ch_set_vol_pan(channel, vol, pan);
     }
 }
 
 void audev_action(AnimSt* state, AnimEv* event) {
     AudEv* aud_ev = (AudEv*)event->data;
-    cosaud_play(&aud_ev->sound, aud_ev->channel ? *aud_ev->channel : -1);
+    cosaud_play(&aud_ev->sound, aud_ev->channel ? *aud_ev->channel : -1, aud_ev->vol, .5f);
 }
 
 void cosaud_kill() {

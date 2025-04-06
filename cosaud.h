@@ -16,13 +16,14 @@ struct AudChannel {
 struct AudEv {
     uint32_t* channel;
     wav64_t sound;
+    float vol;
 };
 
 void cosaud_init(const int frequency, int buffers, int channels);
 void cosaud_life();
 AudChannel* cosaud_reserve(int count);
 void cosaud_release(AudChannel* channel, int count);
-void cosaud_play(wav64_t* sound, int channel);
+void cosaud_play(wav64_t* sound, int channel, float vol, float pan);
 void audev_action(AnimSt* state, AnimEv* event);
 void cosaud_kill();
 

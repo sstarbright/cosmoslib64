@@ -233,14 +233,6 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
             }
             else
                 module->skeletons = NULL;
-
-            for(uint32_t i = 0; i < target_model->chunkCount; i++) {
-                if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
-                  uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
-                  T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
-                  debugf("Material %s\n", mat->name);
-                }
-            }
             
             rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
