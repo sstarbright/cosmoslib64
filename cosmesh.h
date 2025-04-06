@@ -91,7 +91,6 @@ AnimEv* animev_create(AnimSt* state, int slot, float time);
 void animev_action(AnimSt* state, AnimEv* event);
 
 void transev_action(AnimSt* state, AnimEv* event);
-void audioev_action(AnimSt* state, AnimEv* event);
 
 struct Mesh3DM {
     // The 3D renderer of this Mesh3D module.

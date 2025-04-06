@@ -33,7 +33,7 @@ void coslib_add_stage(Stage* stage) {
     }
 }
 void coslib_life(uint32_t frame, float deltaTime) {
-    cossnd_life();
+    cosaud_life();
     joypad_poll();
     joy_pad = joypad_get_inputs(JOYPAD_PORT_1);
     
@@ -96,6 +96,7 @@ void coslib_kill() {
     }
     while(current_stage != layer);
 
+    cosaud_kill();
     t3d_destroy();
     joypad_close();
     rdpq_close();

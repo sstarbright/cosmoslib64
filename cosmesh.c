@@ -196,9 +196,6 @@ void animev_action(AnimSt* _, AnimEv* __) {
 void transev_action(AnimSt* state, AnimEv* event) {
     state->state.module->target_state = (int)event->data;
 }
-void audioev_action(AnimSt* state, AnimEv* event) {
-    
-}
 
 void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_count) {
     if (model_cache) {
