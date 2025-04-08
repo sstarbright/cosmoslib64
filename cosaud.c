@@ -69,7 +69,7 @@ void cosaud_play(wav64_t* sound, int channel, float vol, float pan) {
             else
                 try_channel = (try_channel + 1)%channel_count;
         }
-
+        
         last_channel = channel;
 
         if (channel < 0)

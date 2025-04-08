@@ -68,6 +68,13 @@ void stage_predraw(Stage* self, float delta, uint32_t matrix_id) {
         while(current_draw != self->draw);
     }
 }
+void stage_set_fog(Stage* self) {
+    rdpq_mode_fog(RDPQ_FOG_STANDARD);
+    rdpq_set_fog_color(self->fog_color);
+
+    t3d_fog_set_range(self->fog_start, self->fog_end);
+    t3d_fog_set_enabled(true);
+};
 void stage_draw(Stage* self, float delta, uint32_t matrix_id) {
     self->current_light = 0;
     
@@ -79,11 +86,7 @@ void stage_draw(Stage* self, float delta, uint32_t matrix_id) {
 
     t3d_screen_clear_depth();
 
-    rdpq_mode_fog(RDPQ_FOG_STANDARD);
-    rdpq_set_fog_color(self->fog_color);
-
-    t3d_fog_set_range(self->fog_start, self->fog_end);
-    t3d_fog_set_enabled(true);
+    stage_set_fog(self);
     
     t3d_light_set_count(self->light_count);
 

@@ -72,6 +72,7 @@ struct AnimSt {
     int event_count;
     int next_event;
     float time;
+    float time_offset;
 };
 
 AnimSt* animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, int ev_count, T3DModel* source, const char* name);
@@ -82,6 +83,7 @@ void animst_death(BasicSt* state);
 
 struct AnimEv {
     float time;
+    bool enabled;
     void (*action)(AnimSt* state, AnimEv* event);
     void* data;
     bool free_data;
@@ -125,6 +127,9 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM draw.
 void mesh3dm_draw(Render3DM* self, float delta, uint32_t frame_buffer);
+void no_fog_draw(Render3DM* self, float delta, uint32_t frame_buffer);
+void no_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer);
+void no_fog_or_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM death.
 void mesh3dm_death(Module* self);
 // A basic function to be called upon Mesh3DM death (without freeing the module itself).

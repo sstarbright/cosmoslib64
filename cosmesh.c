@@ -21,13 +21,12 @@ CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded
         cached_model->model = target_model;
         model_cache[slot] = cached_model;
 
-        if (unshaded) {
-            for(uint32_t i = 0; i < target_model->chunkCount; i++) {
-                if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
-                    uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
-                    T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
+        for(uint32_t i = 0; i < target_model->chunkCount; i++) {
+            if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
+                uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
+                T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
+                if (unshaded)
                     mat->renderFlags |= T3D_FLAG_NO_LIGHT;
-                }
             }
         }
 
@@ -86,6 +85,7 @@ AnimSt* animst_create(StateM* machine, AnimSt* anim, int slot, int trans_count, 
     state->life = animst_life;
     state->exit = animst_exit;
     state->death = animst_death;
+    anim->time_offset = .0f;
     anim->time = .0f;
     anim->anim = t3d_anim_create(source, name);
     t3d_anim_attach(&anim->anim, machine->main_skel);
@@ -108,7 +108,7 @@ void animst_entry(BasicSt* state, float time) {
     basicst_entry(state, time);
     state->leaving = false;
     AnimSt* anim = (AnimSt*)state;
-    anim->time = .0f;
+    anim->time = anim->time_offset;
     if (anim->events) {
         anim->next_event = 0;
     }
@@ -119,10 +119,10 @@ void animst_entry(BasicSt* state, float time) {
 
         T3DAnim* blend_anim = &anim->blend_anim;
         t3d_anim_set_playing(blend_anim, true);
-        t3d_anim_set_time(blend_anim, .0f);
+        t3d_anim_set_time(blend_anim, anim->time_offset);
     } else {
         t3d_anim_set_playing(main_anim, true);
-        t3d_anim_set_time(main_anim, .0f);
+        t3d_anim_set_time(main_anim, anim->time_offset);
     }
 }
 void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
@@ -146,15 +146,18 @@ void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
         AnimEv* events = anim->events;
         AnimEv* next_event;
         while (next_event_id < event_count && current_time >= (next_event = &events[next_event_id])->time) {
-            next_event->action(anim, next_event);
+            if (next_event->enabled)
+                next_event->action(anim, next_event);
             next_event_id++;
         }
 
-        if (target_anim->time < anim->time) {
+        if (current_time >= target_anim->animRef->duration) {
             next_event_id = 0;
+            anim->time = .0f;
+        } else {
+            anim->time = current_time;
         }
 
-        anim->time = target_anim->time;
         anim->next_event = next_event_id;
     }
 }
@@ -187,6 +190,7 @@ AnimEv* animev_create(AnimSt* state, int slot, float time) {
     event->time = time;
     event->free_data = false;
     event->data = NULL;
+    event->enabled = true;
     return event;
 }
 void animev_action(AnimSt* _, AnimEv* __) {
@@ -234,7 +238,7 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
             else
                 module->skeletons = NULL;
             
-            rspq_block_begin();
+            /*rspq_block_begin();
                 t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
                 if (module->has_skeleton) {
                     t3d_model_draw_skinned(target_model, &module->skeletons[0]);
@@ -243,7 +247,7 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
                     t3d_model_draw(target_model);
                 t3d_matrix_pop(1);
             module->base_block = rspq_block_end();
-            module->block = module->base_block;
+            module->block = module->base_block;*/
 
             if (stage->draw) {
                 linked_add_to_list(stage->draw->prev, stage->draw, module, offsetof(Render3DM, prev), offsetof(Render3DM, next));
@@ -274,13 +278,37 @@ void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
 }
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
-    if (mesh_module->block) {
-        t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
-        if (mesh_module->has_skeleton)
-            t3d_skeleton_use(&mesh_module->skeletons[0]);
-        rdpq_set_prim_color(self->color);
-        rspq_block_run(mesh_module->block);
-    }
+    t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
+    if (mesh_module->has_skeleton)
+        t3d_skeleton_use(&mesh_module->skeletons[0]);
+    rdpq_set_prim_color(self->color);
+    t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
+    if (mesh_module->has_skeleton) {
+        t3d_model_draw_skinned(mesh_module->model->model, &mesh_module->skeletons[0]);
+    } else
+        t3d_model_draw(mesh_module->model->model);
+    t3d_matrix_pop(1);
+}
+void no_fog_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
+    Stage* stage = ((Module*)self)->actor->stage;
+    rdpq_mode_fog(0);
+    t3d_fog_set_enabled(false);
+    mesh3dm_draw(self, delta, frame_buffer);
+    stage_set_fog(stage);
+}
+void no_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
+    rdpq_mode_zbuf(false, false);
+    mesh3dm_draw(self, delta, frame_buffer);
+    rdpq_mode_zbuf(true, true);
+}
+void no_fog_or_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
+    Stage* stage = ((Module*)self)->actor->stage;
+    rdpq_mode_fog(0);
+    t3d_fog_set_enabled(false);
+    rdpq_mode_zbuf(false, false);
+    mesh3dm_draw(self, delta, frame_buffer);
+    rdpq_mode_zbuf(true, true);
+    stage_set_fog(stage);
 }
 void mesh3dm_death(Module* self) {
     mesh3dm_simple_death((Mesh3DM*)self);
@@ -290,8 +318,8 @@ void mesh3dm_death(Module* self) {
 void mesh3dm_simple_death(Mesh3DM* self) {
     trans3dm_simple_death((Trans3DM*)self);
 
-    rspq_block_free(self->base_block);
-    rspq_block_free(self->trans_block);
+    //rspq_block_free(self->base_block);
+    //rspq_block_free(self->trans_block);
     free_uncached(self->matrix_buffer);
     self->model->uses -= 1;
     for (int i = 0; i < self->num_skeletons; i++) {

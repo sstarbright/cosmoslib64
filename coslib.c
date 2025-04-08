@@ -9,8 +9,10 @@ Stage* layer;
 color_t back_color;
 
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter) {
-    debug_init_isviewer();
+    // UNCOMMENT WHILE WORKING
+    //debug_init_isviewer();
     debug_init_usblog();
+
     dfs_init(DFS_DEFAULT_LOCATION);
     asset_init_compression(asset_compress);
     display_init(resolution, color_depth, num_buffers, gamma_correct, filter);
@@ -37,7 +39,7 @@ void coslib_life(uint32_t frame, float deltaTime) {
     joypad_poll();
     joy_pad = joypad_get_inputs(JOYPAD_PORT_1);
     
-    joy_btn = joypad_get_buttons_pressed(JOYPAD_PORT_1);
+    joy_btn = joypad_get_buttons_held(JOYPAD_PORT_1);
 
     Stage* current_stage = layer;
     do {
@@ -75,7 +77,8 @@ void coslib_draw(uint32_t frame, float deltaTime) {
     while(current_stage != layer);
 
     rdpq_sync_pipe();
-    rdpq_detach_show();
+    rdpq_sync_tile();
+    rdpq_sync_load();
 }
 void coslib_set_back_color(color_t color) {
     back_color = color;

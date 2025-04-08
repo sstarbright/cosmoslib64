@@ -55,6 +55,7 @@ void stage_add_draw(Stage* stage, Render3DM* draw);
 // Update a Stage and its Actors.
 void stage_life(Stage* self, float delta);
 void stage_predraw(Stage* self, float delta, uint32_t matrix_id);
+void stage_set_fog(Stage* self);
 void stage_draw(Stage* self, float delta, uint32_t matrix_id);
 // Kill a Stage and its Actors.
 void stage_kill(Stage* stage);
