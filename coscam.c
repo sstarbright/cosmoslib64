@@ -20,7 +20,9 @@ void camera3dm_life(Module* self, float delta) {
     t3d_viewport_set_projection(&((Camera3DM*)self)->viewport, ((Camera3DM*)self)->fov, ((Camera3DM*)self)->near, ((Camera3DM*)self)->far);
     t3d_viewport_set_view_matrix(&((Camera3DM*)self)->viewport, &((Camera3DM*)self)->matrix);
 }
-void camera3dm_matup(Trans3DM* self, const T3DMat4* global_mat) {
+void camera3dm_matup(Trans3DM* self, const T3DMat4* ref_mat) {
+    trans3dm_matup(self, ref_mat);
+    T3DMat4* global_mat = self->matrix;
     fm_mat4_inverse(&((Camera3DM*)self)->matrix, global_mat);
 }
 void camera3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer) {

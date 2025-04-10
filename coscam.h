@@ -24,7 +24,7 @@ void camera3dm_create(Camera3DM* module);
 // A basic function to be called upon Camera3DM life.
 void camera3dm_life(Module* self, float delta);
 // A basic function to be called upon Camera3DM matrix update.
-void camera3dm_matup(Trans3DM* self, const T3DMat4* global_mat);
+void camera3dm_matup(Trans3DM* self, const T3DMat4* ref_mat);
 // A basic function to be called upon Camera3DM draw.
 void camera3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Camera3DM death.

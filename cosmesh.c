@@ -2,10 +2,12 @@
 
 CachedModel** model_cache;
 int model_cache_size;
+T3DMat4 unscale_matrix;
 
 void cosmesh_init() {
     model_cache = NULL;
     model_cache_size = 0;
+    t3d_mat4_from_srt(&unscale_matrix, (float[3]){ONE_SCALE, ONE_SCALE, ONE_SCALE}, (float[4]){0, 0, 0, 1}, (float[3]){0, 0, 0});
 }
 
 void model_cache_create(int size) {
@@ -132,11 +134,14 @@ void animst_life(BasicSt* state, float delta, bool is_first, float strength) {
     if (is_first) {
         target_anim = &anim->anim;
         t3d_anim_update(target_anim, delta);
+        if (!state->leaving)
+            t3d_skeleton_update(main_skeleton);
     } else {
         target_anim = &anim->blend_anim;
         t3d_anim_update(target_anim, delta);
         T3DSkeleton* blend_skeleton = state->module->blend_skel;
         t3d_skeleton_blend(main_skeleton, main_skeleton, blend_skeleton, strength);
+        t3d_skeleton_update(main_skeleton);
     }
     if (!state->leaving && anim->events) {
         float current_time = anim->time + target_anim->speed*delta;
@@ -270,11 +275,7 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
     }
 }
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
-    Mesh3DM* mesh_module = (Mesh3DM*)self;
-    if (mesh_module->has_skeleton) {
-        t3d_skeleton_update(&mesh_module->skeletons[0]);
-    }
-    memcpy(&mesh_module->matrix_buffer[frame_buffer], self->transform.fp_matrix, sizeof(T3DMat4FP));
+    memcpy(&((Mesh3DM*)self)->matrix_buffer[frame_buffer], self->transform.fp_matrix, sizeof(T3DMat4FP));
 }
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
@@ -325,4 +326,46 @@ void mesh3dm_simple_death(Mesh3DM* self) {
     for (int i = 0; i < self->num_skeletons; i++) {
         t3d_skeleton_destroy(&self->skeletons[i]);
     }
+}
+
+void bone3dm_create(Bone3DM* module, T3DSkeleton* skeleton, const char* bone) {
+    if (skeleton) {
+        int bone_id = t3d_skeleton_find_bone(skeleton, bone);
+        if (bone_id >= 0) {
+            Trans3DM* transform = (Trans3DM*)module;
+            trans3dm_create(transform);
+            ((Module*)module)->life = bone3dm_life;
+            transform->matup = bone3dm_matup;
+            module->bone_matrix = &skeleton->bones[bone_id].matrix;
+        } else
+            free(module);
+    } else
+        free(module);
+}
+void bone3dm_life(Module* self, float delta) {
+    trans3dm_update_matrix((Trans3DM*)self);
+}
+void bone3dm_matup(Trans3DM* self, const T3DMat4* ref_mat) {
+    Bone3DM* bone = (Bone3DM*)self;
+    T3DMat4* global_mat = self->matrix;
+
+    /*t3d_mat4_mul(global_mat, unscale_matrix, bone->bone_matrix);
+    debugf("%f, %f, %f\n", global_mat->m[3][0], global_mat->m[3][1], global_mat->m[3][2]);*/
+    
+    t3d_mat4_mul(global_mat, ref_mat, bone->bone_matrix);
+    if (self->parent) {
+        T3DVec3* scale = &self->parent->scale;
+        t3d_mat4_scale(global_mat, 1/scale->x, 1/scale->y, 1/scale->z);
+    }
+    
+    Trans3DM* start_child_module = self->child;
+    if (start_child_module) {
+        start_child_module->matup(start_child_module, global_mat);
+        Trans3DM* child_module = start_child_module->next;
+        while (child_module && start_child_module != child_module) {
+            start_child_module->matup(child_module, global_mat);
+            child_module = child_module->next;
+        }
+    }
+    t3d_mat4_to_fixed(self->fp_matrix, global_mat);
 }

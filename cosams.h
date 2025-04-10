@@ -158,7 +158,7 @@ struct Trans3DM {
     // The next Trans3D in this linked list.
     Trans3DM* next;
     // The function called when this Trans3D module's matrix is updated.
-    void (*matup)(Trans3DM* self, const T3DMat4* global_mat);
+    void (*matup)(Trans3DM* self, const T3DMat4* ref_mat);
 };
 
 struct Render3DM {

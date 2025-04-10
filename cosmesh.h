@@ -33,7 +33,7 @@ struct CachedModel {
 struct Bone3DM {
     // The 3D transform of this Bone3D module.
     Trans3DM transform;
-    // The Tiny3D Bone's matrix, which we copy the data from to update the 3D transform.
+    // The Tiny3D Bone's matrix, which gets pushed to the transform.
     T3DMat4* bone_matrix;
 };
 
@@ -134,5 +134,9 @@ void no_fog_or_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 void mesh3dm_death(Module* self);
 // A basic function to be called upon Mesh3DM death (without freeing the module itself).
 void mesh3dm_simple_death(Mesh3DM* self);
+
+void bone3dm_create(Bone3DM* module, T3DSkeleton* skeleton, const char* bone);
+void bone3dm_life(Module* self, float delta);
+void bone3dm_matup(Trans3DM* self, const T3DMat4* ref_mat);
 
 #endif

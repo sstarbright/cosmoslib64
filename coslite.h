@@ -21,7 +21,7 @@ struct DirLite3DM {
 // Create a DirectionalLight3D module, initializing its members.
 void dirlite3dm_create(Stage* stage, DirLite3DM* module);
 // A basic function to be called up DirLite3DM matrix update.
-void dirlite3dm_matup(Trans3DM* self, const T3DMat4* global_mat);
+void dirlite3dm_matup(Trans3DM* self, const T3DMat4* ref_mat);
 // A basic function to be called upon DirLite3DM draw.
 void dirlite3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon DirLite3DM death.
@@ -39,7 +39,7 @@ struct PntLite3DM {
 // Create a PointLight3D module, initializing its members.
 void pntlite3dm_create(Stage* stage, PntLite3DM* module);
 // A basic function to be called up PntLite3DM matrix update.
-void pntlite3dm_matup(Trans3DM* self, const T3DMat4* global_mat);
+void pntlite3dm_matup(Trans3DM* self, const T3DMat4* ref_mat);
 // A basic function to be called upon PntLite3DM draw.
 void pntlite3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer);
 // A basic function to be called upon PntLite3DM death.

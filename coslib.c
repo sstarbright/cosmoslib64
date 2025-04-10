@@ -19,6 +19,7 @@ void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_d
     joypad_init();
 
     rdpq_init();
+    //rdpq_debug_start();
 
     t3d_init((T3DInitParams){});
 
@@ -65,7 +66,7 @@ void coslib_draw(uint32_t frame, float deltaTime) {
     rdpq_attach(display_get(), display_get_zbuf());
     t3d_frame_start();
 
-    t3d_screen_clear_color(back_color);
+    //t3d_screen_clear_color(back_color);
 
     current_stage = layer;
     do {

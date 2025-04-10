@@ -16,10 +16,8 @@ void trans3dm_pop_child(Trans3DM* child);
 // Updates a Trans3D module based on its 3D transformations and its parent's matrix.
 // This update is propagated to children, so calling it is unneeded for children if parent is going to be updated.
 void trans3dm_update_matrix(Trans3DM* module);
-// Updates a Trans3D module based on its 3D transformations and a reference matrix.
-void trans3dm_update_matrix_from_ref(Trans3DM* module, T3DMat4* ref_mat);
 // A basic function to be called upon Trans3DM matrix update.
-void trans3dm_module_matup(Trans3DM* self, const T3DMat4* global_mat);
+void trans3dm_matup(Trans3DM* self, const T3DMat4* ref_mat);
 
 
 // A basic function to be called upon Trans3DM death.

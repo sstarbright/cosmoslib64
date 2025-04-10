@@ -18,7 +18,9 @@ void dirlite3dm_create(Stage* stage, DirLite3DM* module) {
         module = NULL;
     }
 }
-void dirlite3dm_matup(Trans3DM* self, const T3DMat4* global_mat) {
+void dirlite3dm_matup(Trans3DM* self, const T3DMat4* ref_mat) {
+    trans3dm_matup(self, ref_mat);
+    T3DMat4* global_mat = self->matrix;
     ((DirLite3DM*)self)->direction = (T3DVec3){{global_mat->m[2][0], global_mat->m[2][1], global_mat->m[2][2]}};
 }
 void dirlite3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer) {
@@ -53,7 +55,9 @@ void pntlite3dm_create(Stage* stage, PntLite3DM* module) {
         module = NULL;
     }
 }
-void pntlite3dm_matup(Trans3DM* self, const T3DMat4* global_mat) {
+void pntlite3dm_matup(Trans3DM* self, const T3DMat4* ref_mat) {
+    trans3dm_matup(self, ref_mat);
+    T3DMat4* global_mat = self->matrix;
     ((PntLite3DM*)self)->position = (T3DVec3){{global_mat->m[3][0], global_mat->m[3][1], global_mat->m[3][2]}};
 }
 void pntlite3dm_draw(Render3DM* module, float delta, uint32_t frame_buffer) {
