@@ -44,7 +44,7 @@ void model_cache_create(int size) {
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded, bool no_fog) {
+CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded, bool no_depth) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
         T3DModel* target_model = t3d_model_load(location);
@@ -60,8 +60,11 @@ CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded
                 if (unshaded) {
                     mat->renderFlags |= T3D_FLAG_NO_LIGHT;
                 }
-                if (no_fog)
-                    mat->fogMode = T3D_FOG_MODE_DISABLED;
+                if (no_depth) {
+                    mat->otherModeMask |= SOM_Z_COMPARE | SOM_Z_WRITE;
+                } else {
+                    mat->otherModeValue |= SOM_Z_COMPARE | SOM_Z_WRITE; 
+                }
             }
         }
 
@@ -335,11 +338,6 @@ void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
             .filterCb = NULL
         });
     t3d_matrix_pop(1);
-}
-void no_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
-    rdpq_mode_zbuf(false, false);
-    mesh3dm_draw(self, delta, frame_buffer);
-    rdpq_mode_zbuf(true, true);
 }
 void mesh3dm_death(Module* self) {
     mesh3dm_simple_death((Mesh3DM*)self);

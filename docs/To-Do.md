@@ -1,32 +1,34 @@
 # Cosmos64 - TODO...
 
-## costrans (Transform Modules for cosams)
+## cosmesh (Mesh Rendering)
+- Move Mesh Render Order data to Mesh3DM, right now it's in CachedModel but it seems more appropriate to manipulate it within the module
+- Complete LagBone module
 
-## coscam (Camera Modules for cosams)
+## General
+- Review code as it is now, trim anything that's become deprecated and make sure there aren't any memory issues
 
-## coslite (Lighting Modules for cosams)
+## CC Stage Builder
+- Start building the CC Stage Builder application
+	- Accurate rendering of the Stage (this renderer will be repurposed for the PC port
+	- Generates C code that should be compiled into a .dso (should have a similar role for PC port, but for windows/linux/mac specific dynamic libraries)
+	- Builds enums for the model cache, as well as for indexing in any part of the program
+	- Each Stage, Actor, and Module will have a space sectioned off called "Func", "Pre", "Intra", and "Post"
+		- Func, Pre and Post will be empty, allowing the user to write additional code other than that generated
+		- Func will be added to the space before the code's "Load" function
+		- Pre, Intra, and Post will be added in order within the code's "Load" function
+		- Intra will be dynamically populated by the Builder as the user makes changes
+		- Changes can be manually writted to Intra, but it will be completely overwritten by the builder if the user changes anything. Func, Pre, and Post are recommended
 
-## cosmesh (Mesh Modules for cosams)
-
-## coscut (Cutscene System)
+## coscut (Cutscene)
 - Store list of included skeletons that will be animated based on each animation
 - Store an animation per skeleton, to use to animate them
 - Store list of excluded modules that will not be updated/drawn while cutscene is playing
 
-## coshit (Collision Modules for cosams)
-- Implement AABB collision boxes as Modules for cosams
+## coshit (Collision)
+- Implement 2D and 3D AABB (2D for use in battle, 3D for use in overworld)
 
 ## cosams (Actor-Module System)
-- ID for type of module, and unique ID for each module in an actor?
-- Stage list tool (blender?)
-    - Should give us transforms to start loaded trans3dmodules with
-    - Colors/light info too?
-- Stage display list, to draw in order (sync pipe after each?)
-- Add ambient light to stage, set when drawing stage
 - Some sort of signal system, signals have a simple call function and store a list of function pointers to call when the signal is called
 
-## cosjoy (Input system)
-- Just a list of functions
-- Any code can access these functions to check the values of various inputs on pad
-
-## cosdebug (Debug tools)
+## cosjoy (Input)
+- Add support for multiple joypads

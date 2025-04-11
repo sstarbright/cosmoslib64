@@ -57,7 +57,7 @@ void cosmesh_init();
 // Creates the Cosmos Mesh model cache, with a specific number of models.
 void model_cache_create(int size);
 // Loads a model into the model cache, at a specific slot.
-CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded, bool no_fog);
+CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded, bool no_depth);
 // Clears the model cache.
 void model_cache_clear();
 
@@ -135,7 +135,6 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM draw.
 void mesh3dm_draw(Render3DM* self, float delta, uint32_t frame_buffer);
-void no_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM death.
 void mesh3dm_death(Module* self);
 // A basic function to be called upon Mesh3DM death (without freeing the module itself).

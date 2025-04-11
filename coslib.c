@@ -10,7 +10,7 @@ color_t back_color;
 
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter) {
     // UNCOMMENT WHILE WORKING
-    //debug_init_isviewer();
+    debug_init_isviewer();
     debug_init_usblog();
 
     dfs_init(DFS_DEFAULT_LOCATION);
@@ -19,7 +19,7 @@ void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_d
     joypad_init();
 
     rdpq_init();
-    //rdpq_debug_start();
+    rdpq_debug_start();
 
     t3d_init((T3DInitParams){});
 
@@ -73,13 +73,13 @@ void coslib_draw(uint32_t frame, float deltaTime) {
         if (current_stage->enabled && current_stage->visible) {
             stage_draw(current_stage, deltaTime, matrix_id);
             current_stage = current_stage->next;
+
+            rdpq_sync_pipe();
+            rdpq_sync_tile();
+            rdpq_sync_load();
         }
     }
     while(current_stage != layer);
-
-    rdpq_sync_pipe();
-    rdpq_sync_tile();
-    rdpq_sync_load();
 }
 void coslib_set_back_color(color_t color) {
     back_color = color;
