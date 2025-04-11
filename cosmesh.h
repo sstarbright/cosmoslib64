@@ -26,6 +26,8 @@ typedef struct Mesh3DM Mesh3DM;
 struct CachedModel {
     // The Tiny3D model that this cache stores.
     T3DModel* model;
+    T3DObject** order;
+    int order_num;
     // The number of uses this Model currently has.
     int uses;
 };
@@ -46,12 +48,16 @@ struct LagBone3DM {
     float speed;
 };
 
+T3DObject *t3d_model_obj_by_mat_name(const T3DModel *model, const char *name);
+
+void cosmesh_model_draw(const CachedModel* model, T3DModelDrawConf conf);
+
 // Initializes Cosmos Mesh module.
 void cosmesh_init();
 // Creates the Cosmos Mesh model cache, with a specific number of models.
 void model_cache_create(int size);
 // Loads a model into the model cache, at a specific slot.
-CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded);
+CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded, bool no_fog);
 // Clears the model cache.
 void model_cache_clear();
 
@@ -112,6 +118,8 @@ struct Mesh3DM {
     // The list of skeletons this module has.
     T3DSkeleton* skeletons;
 
+    void (*tile_cb)(void* userData, rdpq_texparms_t *tileParams, rdpq_tile_t tile);
+
     // The currently running drawing block for this module. (Base by default)
     rspq_block_t* block;
     // The base drawing block that was created for this module.
@@ -127,9 +135,7 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
 void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM draw.
 void mesh3dm_draw(Render3DM* self, float delta, uint32_t frame_buffer);
-void no_fog_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 void no_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer);
-void no_fog_or_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer);
 // A basic function to be called upon Mesh3DM death.
 void mesh3dm_death(Module* self);
 // A basic function to be called upon Mesh3DM death (without freeing the module itself).

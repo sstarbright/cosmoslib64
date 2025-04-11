@@ -21,23 +21,21 @@ void trans3dm_create(Trans3DM* module) {
 }
 void trans3dm_add_child(Trans3DM* parent, Trans3DM* child) {
     Trans3DM* first_child = parent->child;
-    if (first_child) {
+    if (first_child)
         linked_add_to_list(first_child->prev, first_child, child, offsetof(Trans3DM, prev), offsetof(Trans3DM, next));
-    } else {
+    else
         parent->child = child;
-        child->parent = parent;
-    }
+    child->parent = parent;
 }
 void trans3dm_pop_child(Trans3DM* child) {
     Trans3DM* next_child = child->next;
     Trans3DM* parent = child->parent;
     if (linked_pop_from_list(child, offsetof(Trans3DM, prev), offsetof(Trans3DM, next))) {
-        if (parent) {
-            parent->child = NULL;
-        }
-    } else {
         if (parent)
             parent->child = next_child;
+    } else {
+        if (parent)
+            parent->child = NULL;
     }
     child->parent = NULL;
 }
@@ -60,7 +58,7 @@ void trans3dm_matup(Trans3DM* self, const T3DMat4* ref_mat) {
         start_child_module->matup(start_child_module, global_mat);
         Trans3DM* child_module = start_child_module->next;
         while (child_module && start_child_module != child_module) {
-            start_child_module->matup(child_module, global_mat);
+            child_module->matup(child_module, global_mat);
             child_module = child_module->next;
         }
     }

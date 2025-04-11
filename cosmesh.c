@@ -4,6 +4,34 @@ CachedModel** model_cache;
 int model_cache_size;
 T3DMat4 unscale_matrix;
 
+T3DObject *t3d_model_obj_by_mat_name(const T3DModel *model, const char *name) {
+    for(uint32_t i = 0; i < model->chunkCount; i++) {
+      if(model->chunkOffsets[i].type == T3D_CHUNK_TYPE_OBJECT) {
+        uint32_t offset = model->chunkOffsets[i].offset & 0x00FFFFFF;
+        T3DObject *obj = (T3DObject*)((char*)model + offset);
+        T3DMaterial *mat = obj->material;
+        if(mat->name && strcmp(mat->name, name) == 0)return obj;
+      }
+    }
+    return NULL;
+}
+
+void cosmesh_model_draw(const CachedModel* model, T3DModelDrawConf conf) {
+    if (model->order) {
+        T3DModelState state = t3d_model_state_create();
+        state.drawConf = &conf;
+
+        for (int i = 0; i < model->order_num; i++) {
+            T3DObject* order_obj = model->order[i];
+            t3d_model_draw_material(order_obj->material, &state);
+            t3d_model_draw_object(order_obj, conf.matrices);
+        }
+
+        if(state.lastVertFXFunc != T3D_VERTEX_FX_NONE)t3d_state_set_vertex_fx(T3D_VERTEX_FX_NONE, 0, 0);
+    } else
+        t3d_model_draw_custom(model->model, conf);
+}
+
 void cosmesh_init() {
     model_cache = NULL;
     model_cache_size = 0;
@@ -16,19 +44,24 @@ void model_cache_create(int size) {
     memset(model_cache, 0, sizeof(CachedModel*)*size);
 }
 
-CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded) {
+CachedModel* load_model_into_cache(const char* location, int slot, bool unshaded, bool no_fog) {
     if (model_cache) {
         CachedModel* cached_model = malloc(sizeof(CachedModel));
         T3DModel* target_model = t3d_model_load(location);
         cached_model->model = target_model;
         model_cache[slot] = cached_model;
+        cached_model->order = NULL;
+        cached_model->order_num = 0;
 
         for(uint32_t i = 0; i < target_model->chunkCount; i++) {
             if(target_model->chunkOffsets[i].type == T3D_CHUNK_TYPE_MATERIAL) {
                 uint32_t offset = target_model->chunkOffsets[i].offset & 0x00FFFFFF;
                 T3DMaterial *mat = (T3DMaterial*)((char*)target_model + offset);
-                if (unshaded)
+                if (unshaded) {
                     mat->renderFlags |= T3D_FLAG_NO_LIGHT;
+                }
+                if (no_fog)
+                    mat->fogMode = T3D_FOG_MODE_DISABLED;
             }
         }
 
@@ -216,6 +249,7 @@ void mesh3dm_create(Stage* stage, Mesh3DM* module, int model_slot, int skeleton_
             trans->scale = (T3DVec3){{ONE_SCALE, ONE_SCALE, ONE_SCALE}};
             trans3dm_update_matrix(trans);
             
+            module->tile_cb = NULL;
             (render)->predraw = mesh3dm_predraw;
             (render)->draw = mesh3dm_draw;
             ((Module*)module)->death = mesh3dm_death;
@@ -279,37 +313,33 @@ void mesh3dm_predraw(Render3DM* self, float delta, uint32_t frame_buffer) {
 }
 void mesh3dm_draw(Render3DM* self, float _, uint32_t frame_buffer) {
     Mesh3DM* mesh_module = (Mesh3DM*)self;
+    T3DSkeleton* skeleton;
     t3d_segment_set(MESH_MAT_SEGMENT_PLACEHOLDER, &mesh_module->matrix_buffer[frame_buffer]);
-    if (mesh_module->has_skeleton)
-        t3d_skeleton_use(&mesh_module->skeletons[0]);
+    if (mesh_module->has_skeleton) {
+        skeleton = &mesh_module->skeletons[0];
+        t3d_skeleton_use(skeleton);
+    }
     rdpq_set_prim_color(self->color);
     t3d_matrix_push(t3d_segment_placeholder(MESH_MAT_SEGMENT_PLACEHOLDER));
     if (mesh_module->has_skeleton) {
-        t3d_model_draw_skinned(mesh_module->model->model, &mesh_module->skeletons[0]);
+        cosmesh_model_draw(mesh_module->model, (T3DModelDrawConf){
+            .userData = NULL,
+            .tileCb = mesh_module->tile_cb,
+            .filterCb = NULL,
+            .matrices = (const T3DMat4FP*)t3d_segment_placeholder(T3D_SEGMENT_SKELETON)
+          });
     } else
-        t3d_model_draw(mesh_module->model->model);
+        cosmesh_model_draw(mesh_module->model, (T3DModelDrawConf){
+            .userData = NULL,
+            .tileCb = mesh_module->tile_cb,
+            .filterCb = NULL
+        });
     t3d_matrix_pop(1);
-}
-void no_fog_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
-    Stage* stage = ((Module*)self)->actor->stage;
-    rdpq_mode_fog(0);
-    t3d_fog_set_enabled(false);
-    mesh3dm_draw(self, delta, frame_buffer);
-    stage_set_fog(stage);
 }
 void no_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
     rdpq_mode_zbuf(false, false);
     mesh3dm_draw(self, delta, frame_buffer);
     rdpq_mode_zbuf(true, true);
-}
-void no_fog_or_depth_draw(Render3DM* self, float delta, uint32_t frame_buffer) {
-    Stage* stage = ((Module*)self)->actor->stage;
-    rdpq_mode_fog(0);
-    t3d_fog_set_enabled(false);
-    rdpq_mode_zbuf(false, false);
-    mesh3dm_draw(self, delta, frame_buffer);
-    rdpq_mode_zbuf(true, true);
-    stage_set_fog(stage);
 }
 void mesh3dm_death(Module* self) {
     mesh3dm_simple_death((Mesh3DM*)self);
@@ -363,7 +393,7 @@ void bone3dm_matup(Trans3DM* self, const T3DMat4* ref_mat) {
         start_child_module->matup(start_child_module, global_mat);
         Trans3DM* child_module = start_child_module->next;
         while (child_module && start_child_module != child_module) {
-            start_child_module->matup(child_module, global_mat);
+            child_module->matup(child_module, global_mat);
             child_module = child_module->next;
         }
     }
