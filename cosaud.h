@@ -20,7 +20,6 @@ struct AudEv {
 };
 
 void cosaud_init(const int frequency, int buffers, int channels);
-void cosaud_life();
 AudChannel* cosaud_reserve(int count);
 void cosaud_release(AudChannel* channel, int count);
 void cosaud_play(wav64_t* sound, int channel, float vol, float pan);

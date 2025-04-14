@@ -159,6 +159,7 @@ void animst_entry(BasicSt* state, float time) {
         t3d_anim_set_playing(blend_anim, true);
         t3d_anim_set_time(blend_anim, anim->time_offset);
     } else {
+        t3d_skeleton_reset(state->module->main_skel);
         t3d_anim_set_playing(main_anim, true);
         t3d_anim_set_time(main_anim, anim->time_offset);
     }
