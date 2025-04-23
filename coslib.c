@@ -18,8 +18,6 @@ void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_d
     rdpq_debug_start();
 
     t3d_init((T3DInitParams){});
-
-    cosmesh_init();
     
     layer = NULL;
 }
