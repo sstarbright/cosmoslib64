@@ -36,6 +36,7 @@ void coslib_add_stage(Stage* stage) {
     }
 }
 void coslib_life(uint32_t frame, float deltaTime) {
+    mixer_try_play();
     joy_pad = joypad_get_inputs(JOYPAD_PORT_1);
     
     joy_btn = joypad_get_buttons_held(JOYPAD_PORT_1);
@@ -49,7 +50,6 @@ void coslib_life(uint32_t frame, float deltaTime) {
     }
     while(current_stage != layer);
     
-    mixer_try_play();
     joypad_poll();
 }
 void coslib_draw(uint32_t frame, float deltaTime) {
