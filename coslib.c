@@ -19,7 +19,7 @@ void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_d
     joypad_init();
 
     rdpq_init();
-    rdpq_debug_start();
+    //rdpq_debug_start();
 
     t3d_init((T3DInitParams){});
 
