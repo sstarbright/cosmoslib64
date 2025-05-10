@@ -8,9 +8,6 @@
 #include "../cosmoslib64/cosaud.h"
 #include <t3d/t3ddebug.h>
 
-/** @brief 320x240 mode, no borders */
-const resolution_t RESOLUTION_320x240I = {.width = 320, .height = 240, .interlaced = INTERLACE_HALF};
-
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
 void coslib_add_stage(Stage* stage);
 void coslib_life(uint32_t frame, float deltaTime);
