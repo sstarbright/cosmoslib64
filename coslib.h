@@ -11,17 +11,35 @@
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
 void coslib_end();
 
-typedef struct Mesh3D Mesh3D;
-typedef struct SkMesh3D SkMesh3D;
-typedef struct SoMesh3D SoMesh3D;
+typedef struct script_o_t script_o_t;
+typedef struct context_o_t context_o_t;
+typedef struct scene_o_t scene_o_t;
+typedef struct mesh3d_t mesh3d_t;
+typedef struct sk_mesh3d_t sk_mesh3d_t;
+typedef struct so_mesh3d_t so_mesh3d_t;
 
-struct Mesh3D {
+struct script_o_t {
+    void* dso;
+    void (*up)(script_o_t* self, float delta, int buffer);
+};
+
+struct scene_o_t {
+    script_o_t script;
+    context_o_t* context;
+};
+
+struct context_o_t {
+    script_o_t script;
+    scene_o_t scene;
+};
+
+struct mesh3d_t {
     T3DModel* model;
     color_t color;
     rspq_block_t* block;
     T3DMat4FP* mat_buffer;
 };
-struct SkMesh3D {
+struct sk_mesh3d_t {
     T3DModel* model;
     color_t color;
     rspq_block_t* block;
@@ -29,7 +47,7 @@ struct SkMesh3D {
     T3DSkeleton skel;
     T3DSkeleton b_skel;
 };
-struct SoMesh3D {
+struct so_mesh3d_t {
     T3DObject** layers;
     color_t color;
     T3DMat4FP* mat_buffer;
