@@ -11,35 +11,61 @@
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
 void coslib_end();
 
+void load_ctx(context_o_t* ctx, int entry, void* data);
+void unload_ctx(context_o_t* ctx, int entry);
+void req_ctx(context_o_t* ctx, int entry, void* data);
+void unreq_ctx(context_o_t* ctx, int entry);
+
+void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* data);
+void unload_act(actor_scr_o_t* act);
+actor_o_t* new_act(actor_scr_o_t* act, void* data);
+void kill_act(actor_o_t* act);
+
+void load_scr(script_o_t* script, const char* path, void* data);
+void unload_scr(script_o_t* script);
+
 typedef struct script_o_t script_o_t;
 typedef struct context_o_t context_o_t;
-typedef struct scene_o_t scene_o_t;
-typedef struct mesh3d_t mesh3d_t;
-typedef struct sk_mesh3d_t sk_mesh3d_t;
-typedef struct so_mesh3d_t so_mesh3d_t;
+typedef struct actor_scr_o_t actor_scr_o_t;
+typedef struct actor_o_t actor_o_t;
+typedef struct mesh_t mesh_t;
+typedef struct sk_mesh_t sk_mesh_t;
+typedef struct so_mesh_t so_mesh_t;
 
 struct script_o_t {
     void* dso;
-    void (*up)(script_o_t* self, float delta, int buffer);
-};
-
-struct scene_o_t {
-    script_o_t script;
-    context_o_t* context;
+    void (*up)(float delta, int buffer);
 };
 
 struct context_o_t {
-    script_o_t script;
-    scene_o_t scene;
+    script_o_t lo;
+    void* glo;
+    char* path;
+    int depends;
+    bool auto_close;
 };
 
-struct mesh3d_t {
+struct actor_scr_o_t {
+    script_o_t script;
+    void* inst;
+    int max_inst;
+    int last_empty;
+    int size;
+};
+
+struct actor_o_t {
+    actor_scr_o_t* base;
+    bool exists;
+    int index;
+};
+
+struct mesh_t {
     T3DModel* model;
     color_t color;
     rspq_block_t* block;
     T3DMat4FP* mat_buffer;
 };
-struct sk_mesh3d_t {
+struct sk_mesh_t {
     T3DModel* model;
     color_t color;
     rspq_block_t* block;
@@ -47,7 +73,7 @@ struct sk_mesh3d_t {
     T3DSkeleton skel;
     T3DSkeleton b_skel;
 };
-struct so_mesh3d_t {
+struct so_mesh_t {
     T3DObject** layers;
     color_t color;
     T3DMat4FP* mat_buffer;
