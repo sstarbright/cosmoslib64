@@ -11,38 +11,45 @@
 void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
 void coslib_end();
 
-void load_ctx(context_o_t* ctx, int entry, void* data);
-void unload_ctx(context_o_t* ctx, int entry);
+typedef struct script_o_t script_o_t;
+typedef struct context_o_t context_o_t;
+typedef struct scene_o_t scene_o_t;
+typedef struct actor_scr_o_t actor_scr_o_t;
+typedef struct actor_o_t actor_o_t;
+typedef struct bs_mesh_t bs_mesh_t;
+typedef struct sk_mesh_t sk_mesh_t;
+typedef struct so_mesh_t so_mesh_t;
+
+void load_ctx(context_o_t* ctx, void* data);
+void unload_ctx(context_o_t* ctx);
 void req_ctx(context_o_t* ctx, int entry, void* data);
 void unreq_ctx(context_o_t* ctx, int entry);
 
 void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* data);
 void unload_act(actor_scr_o_t* act);
 actor_o_t* new_act(actor_scr_o_t* act, void* data);
+void update_act(actor_scr_o_t* act, float delta, int buffer);
 void kill_act(actor_o_t* act);
 
 void load_scr(script_o_t* script, const char* path, void* data);
 void unload_scr(script_o_t* script);
 
-typedef struct script_o_t script_o_t;
-typedef struct context_o_t context_o_t;
-typedef struct actor_scr_o_t actor_scr_o_t;
-typedef struct actor_o_t actor_o_t;
-typedef struct mesh_t mesh_t;
-typedef struct sk_mesh_t sk_mesh_t;
-typedef struct so_mesh_t so_mesh_t;
-
 struct script_o_t {
     void* dso;
-    void (*up)(float delta, int buffer);
+    void (*up)(float delta, int buffer, void* data);
 };
 
 struct context_o_t {
-    script_o_t lo;
-    void* glo;
+    script_o_t script;
+    bool loaded;
     char* path;
     int depends;
     bool auto_close;
+};
+
+struct scene_o_t {
+    script_o_t script;
+    actor_o_t* (*actor)(int idx);
 };
 
 struct actor_scr_o_t {
@@ -51,6 +58,8 @@ struct actor_scr_o_t {
     int max_inst;
     int last_empty;
     int size;
+    void (*new)(actor_o_t* self, void* data);
+    void (*kill)(actor_o_t* self);
 };
 
 struct actor_o_t {

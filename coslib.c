@@ -26,63 +26,47 @@ void coslib_end() {
     display_close();
 }
 
-void load_ctx(context_o_t* ctx, int entry, void* data) {
-    context_o_t* context = &ctx[entry];
-    context->depends = 0;
-    context->auto_close = true;
-    char* ctx_path = context->path;
-    int cont_len = strlen(ctx_path);
-    char dso_path [cont_len+9];
-    strcpy(dso_path, ctx_path);
-    strcat(dso_path, "_ctxg.dso");
-    void* found_dso = dlopen(dso_path, RTLD_GLOBAL);
-    if (found_dso)
-        context->glo = found_dso;
-    else
-        context->glo = NULL;
-    strcpy(dso_path, ctx_path);
-    strcat(dso_path, "_ctxl.dso");
-    found_dso = dlopen(dso_path, RTLD_LOCAL);
-    void* found_func;
+void load_ctx(context_o_t* ctx, void* data) {
+    ctx->depends = 0;
+    ctx->auto_close = true;
+    ctx->loaded = true;
+    char* ctx_path = ctx->path;
+    void* found_dso = dlopen(ctx_path, RTLD_GLOBAL);
     if (found_dso) {
-        context->lo.dso = found_dso;
-        found_func = dlsym(found_dso, "up");
-        if (found_func)
-            context->lo.up = found_func;
-        else
-            context->lo.up = NULL;
-        void (*lo_init)(script_o_t* self, void* data) = dlsym(found_dso, "init");
-        if (lo_init)
-            lo_init(&context->lo, data);
+        ctx->script.dso = found_dso;
+        ctx->script.up = dlsym(found_dso, "up");
+        void (*ctx_init)(script_o_t* self, void* data) = dlsym(found_dso, "init");
+        if (ctx_init)
+            ctx_init(&ctx->script, data);
     }
     else {
-        context->lo.dso = NULL;
+        ctx->script.dso = NULL;
     }
 }
-void unload_ctx(context_o_t* ctx, int entry) {
-    context_o_t* context = &ctx[entry];
-    if (context && context->depends == 0) {
-        if (context->glo)
-            dlclose(context->glo);
-        if (context->lo.dso)
-            // TODO - Add code here to call a possible close function
-            dlclose(context->lo.dso);
-        ctx[entry] = NULL;
+void unload_ctx(context_o_t* ctx) {
+    if (ctx->depends == 0) {
+        ctx->loaded = false;
+        if (ctx->script.dso) {
+            void (*ctx_close)() = dlsym(ctx->script.dso, "close");
+            if (ctx_close)
+                ctx_close();
+            dlclose(ctx->script.dso);
+        }
     }
 }
 void req_ctx(context_o_t* ctx, int entry, void* data) {
     context_o_t* context = &ctx[entry];
-    if (!context) {
-        load_ctx(ctx, entry, data);
+    if (!context->loaded) {
+        load_ctx(context, data);
     }
         context->depends++;
 }
 void unreq_ctx(context_o_t* ctx, int entry) {
     context_o_t* context = &ctx[entry];
-    if (context) {
+    if (context->loaded) {
         context->depends--;
         if (context->auto_close)
-            unload_ctx(ctx, entry);
+            unload_ctx(context);
     }
 }
 
@@ -92,9 +76,13 @@ void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* dat
     act->inst = malloc(size*max);
     act->max_inst = max;
     act->last_empty = 0;
+    act->new = dlsym(((script_o_t*)act)->dso, "new");
+    act->kill = dlsym(((script_o_t*)act)->dso, "kill");
     actor_o_t* empty_actor;
+    int inst_base = (int)act->inst;
+    
     for (int i = 0; i < max; i++) {
-        empty_actor = (actor_o_t*)(((int)act->inst)+i*size);
+        empty_actor = (actor_o_t*)(inst_base+i*size);
         empty_actor->exists = false;
         empty_actor->base = act;
         empty_actor->index = i;
@@ -106,28 +94,42 @@ void unload_act(actor_scr_o_t* act) {
 }
 actor_o_t* new_act(actor_scr_o_t* act, void* data) {
     if (act->last_empty < act->max_inst) {
+        int inst_base = (int)act->inst;
         int this_index = act->last_empty;
-        actor_o_t* new_actor = (actor_o_t*)(((int)act->inst)+this_index*size);
+        int size = act->size;
+        actor_o_t* new_actor = (actor_o_t*)(inst_base+this_index*size);
         new_actor->exists = true;
+        act->new(new_actor, data);
 
         this_index++;
-        actor_o_t* check_actor = (actor_o_t*)(((int)act->inst)+this_index*size);
-        for (this_index < act->max_inst; this_index++) {
+        actor_o_t* check_actor = (actor_o_t*)(inst_base+this_index*size);
+        for (;this_index < act->max_inst; this_index++) {
             if (!check_actor->exists)
                 break;
-            check_actor = (actor_o_t*)(((int)act->inst)+this_index*size);
+            check_actor = (actor_o_t*)(inst_base+this_index*size);
         }
         act->last_empty = this_index;
         return new_actor;
     } else
         return NULL;
 }
+void update_act(actor_scr_o_t* act, float delta, int buffer) {
+    int size = act->size;
+    int inst_base = (int)act->inst;
+    void(*act_up)(float delta, int buffer, void* data) = act->script.up;
+    actor_o_t* up_actor;
+    for (int i=0; i < act->max_inst; i++) {
+        up_actor = (actor_o_t*)(inst_base+i*size);
+        if (up_actor->exists)
+            act_up(delta, buffer, (void*)up_actor);
+    }
+}
 void kill_act(actor_o_t* act) {
     act->exists = false;
-    int last_empty = act->base->last_empty;
+    int last_empty = ((actor_scr_o_t*)act)->last_empty;
     last_empty = act->index < last_empty ? act->index : last_empty;
-    act->base->last_empty = last_empty;
-    // TODO - Call possible kill function on actor
+    ((actor_scr_o_t*)act)->last_empty = last_empty;
+    ((actor_scr_o_t*)act)->kill(act);
 }
 
 void load_scr(script_o_t* script, const char* path, void* data) {
@@ -142,7 +144,8 @@ void load_scr(script_o_t* script, const char* path, void* data) {
 }
 void unload_scr(script_o_t* script) {
     if (script->dso) {
-        // TODO - Add code here to call a possible close function
+        void (*scr_close)() = dlsym(script->dso, "close");
+        scr_close();
         dlclose(script->dso);
     }
     free(script);

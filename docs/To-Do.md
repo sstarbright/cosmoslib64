@@ -1,20 +1,14 @@
 # Cosmoslib64 - TODO...
 
 ## Rewrite Context and Scene objects and loading
-### Context
-- Should expose symbols
-- Can be loaded in and out at any time, as long as no dependants are active?
-- Hardcoded array of contexts, each one should store number of dependants
-- Has init, up, close
-- Load both a _ctxl.c, a _ctxg.c, which include an _str.h
-	- ctxl contains the local init, up, and close functions that every context may have
-	- ctxg contains global functions that the ctxl, scene, and any object can call to access/modify context data without needing to locate the symbols
-	- str contains data structures that the context uses
+
 ### Scene
-- Should not expose symbols
 - has init, up, close, pause, resume
 - Pause should remove from it's dependencies so these contexts can be unloaded if not in use while paused
 - Resume should add to it's dependencies
+
+## Encounter Builder
+- Figure out what data I should store regarding encounters
 
 ## CC Stage Builder
 - Start building the CC Stage Builder application
