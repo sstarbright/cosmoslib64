@@ -31,17 +31,7 @@ void load_ctx(context_o_t* ctx, void* data) {
     ctx->auto_close = true;
     ctx->loaded = true;
     char* ctx_path = ctx->path;
-    void* found_dso = dlopen(ctx_path, RTLD_GLOBAL);
-    if (found_dso) {
-        ctx->script.dso = found_dso;
-        ctx->script.up = dlsym(found_dso, "up");
-        void (*ctx_init)(script_o_t* self, void* data) = dlsym(found_dso, "init");
-        if (ctx_init)
-            ctx_init(&ctx->script, data);
-    }
-    else {
-        ctx->script.dso = NULL;
-    }
+    load_scr((script_o_t*)ctx, ctx_path, true, data);
 }
 void unload_ctx(context_o_t* ctx) {
     if (ctx->depends == 0) {
@@ -71,28 +61,26 @@ void unreq_ctx(context_o_t* ctx, int entry) {
     }
 }
 
-void load_scn(scene_o_t* scn, const char* path, void* data) {
-    load_scr(&scn->script, path, data);
+void load_scn(scene_o_t* scn, const char* path, int acts, void* data) {
+    load_scr(&scn->script, path, false, data);
     
     void* script = scn->script.dso;
     if (script) {
-        actor_o_t* (*script_actor)(int idx) = dlsym(script, "actor");
-        if (script_actor) {
-            scn->actor = script_actor;
-        } else {
-            scn->actor = scn_get_act;
-        }
+        int (*script_acts)() = dlsym(script, "acts");
+        if (script_acts)
+            acts += script_acts();
+        scn->actor = malloc(acts*sizeof(actor_scr_o_t));
+        void (*scr_init)(script_o_t* self, void* data) = dlsym(script->dso, "init");
+        if (scr_init)
+            scr_init(script, data);
     }
 }
 void unload_scn(scene_o_t* scn) {
     unload_scr(&scn->script);
 }
-actor_o_t* scn_get_act(int idx) {
-    return NULL;
-}
 
 void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* data) {
-    load_scr(&act->script, path, data);
+    load_scr(&act->script, path, true, data);
     act->size = size;
     act->inst = malloc(size*max);
     act->max_inst = max;
@@ -153,14 +141,16 @@ void kill_act(actor_o_t* act) {
     ((actor_scr_o_t*)act)->kill(act);
 }
 
-void load_scr(script_o_t* script, const char* path, void* data) {
+void load_scr(script_o_t* script, const char* path, bool auto_init, void* data) {
     script->dso = dlopen(path, RTLD_LOCAL);
     if (script->dso) {
         script->up = dlsym(script->dso, "up");
 
-        void (*scr_init)(script_o_t* self, void* data) = dlsym(script->dso, "init");
-        if (scr_init)
-            scr_init(script, data);
+        if (auto_init) {
+            void (*scr_init)(script_o_t* self, void* data) = dlsym(script->dso, "init");
+            if (scr_init)
+                scr_init(script, data);
+        }
     }
 }
 void unload_scr(script_o_t* script) {
