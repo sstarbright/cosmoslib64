@@ -51,6 +51,7 @@ void unload_ctx(context_o_t* ctx) {
             if (ctx_close)
                 ctx_close();
             dlclose(ctx->script.dso);
+            ctx->script.dso = NULL;
         }
     }
 }
@@ -68,6 +69,26 @@ void unreq_ctx(context_o_t* ctx, int entry) {
         if (context->auto_close)
             unload_ctx(context);
     }
+}
+
+void load_scn(scene_o_t* scn, const char* path, void* data) {
+    load_scr(&scn->script, path, data);
+    
+    void* script = scn->script.dso;
+    if (script) {
+        actor_o_t* (*script_actor)(int idx) = dlsym(script, "actor");
+        if (script_actor) {
+            scn->actor = script_actor;
+        } else {
+            scn->actor = scn_get_act;
+        }
+    }
+}
+void unload_scn(scene_o_t* scn) {
+    unload_scr(&scn->script);
+}
+actor_o_t* scn_get_act(int idx) {
+    return NULL;
 }
 
 void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* data) {
@@ -147,6 +168,6 @@ void unload_scr(script_o_t* script) {
         void (*scr_close)() = dlsym(script->dso, "close");
         scr_close();
         dlclose(script->dso);
+        script->dso = NULL;
     }
-    free(script);
 }

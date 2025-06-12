@@ -25,6 +25,10 @@ void unload_ctx(context_o_t* ctx);
 void req_ctx(context_o_t* ctx, int entry, void* data);
 void unreq_ctx(context_o_t* ctx, int entry);
 
+void load_scn(scene_o_t* scn, const char* path, void* data);
+void unload_scn(scene_o_t* scn);
+actor_o_t* scn_get_act(int idx);
+
 void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* data);
 void unload_act(actor_scr_o_t* act);
 actor_o_t* new_act(actor_scr_o_t* act, void* data);
