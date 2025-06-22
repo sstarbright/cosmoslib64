@@ -61,6 +61,7 @@ struct actor_scr_o_t {
     int max_inst;
     int last_empty;
     int size;
+    int used;
     void (*new)(actor_o_t* self, void* data);
     void (*kill)(actor_o_t* self);
 };

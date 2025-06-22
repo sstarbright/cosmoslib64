@@ -82,6 +82,7 @@ void unload_scn(scene_o_t* scn) {
 void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* data) {
     load_scr(&act->script, path, true, data);
     act->size = size;
+    act->used = 0;
     act->inst = malloc(size*max);
     act->max_inst = max;
     act->last_empty = 0;
@@ -109,6 +110,7 @@ actor_o_t* new_act(actor_scr_o_t* act, void* data) {
         actor_o_t* new_actor = (actor_o_t*)(inst_base+this_index*size);
         new_actor->exists = true;
         act->new(new_actor, data);
+        act->used = act->used > this_index ? act->used : this_index;
 
         this_index++;
         actor_o_t* check_actor = (actor_o_t*)(inst_base+this_index*size);
@@ -127,7 +129,7 @@ void update_act(actor_scr_o_t* act, float delta, int buffer) {
     int inst_base = (int)act->inst;
     void(*act_up)(float delta, int buffer, void* data) = act->script.up;
     actor_o_t* up_actor;
-    for (int i=0; i < act->max_inst; i++) {
+    for (int i=0; i < act->used; i++) {
         up_actor = (actor_o_t*)(inst_base+i*size);
         if (up_actor->exists)
             act_up(delta, buffer, (void*)up_actor);
@@ -135,10 +137,20 @@ void update_act(actor_scr_o_t* act, float delta, int buffer) {
 }
 void kill_act(actor_o_t* act) {
     act->exists = false;
-    int last_empty = ((actor_scr_o_t*)act)->last_empty;
+    actor_scr_o_t* base_act = ((actor_scr_o_t*)act);
+    int last_empty = base_act->last_empty;
     last_empty = act->index < last_empty ? act->index : last_empty;
-    ((actor_scr_o_t*)act)->last_empty = last_empty;
-    ((actor_scr_o_t*)act)->kill(act);
+    base_act->last_empty = last_empty;
+    base_act->kill(act);
+    actor_o_t* check_actor = act;
+    int size = base_act->size;
+    int inst_base = (int)base_act->inst;
+    int i = base_act->used;
+    while (i > 0 && !check_actor->exists) {
+        i = i--;
+        check_actor = (actor_o_t*)(inst_base+i*size);
+    }
+    base_act->used = i;
 }
 
 void load_scr(script_o_t* script, const char* path, bool auto_init, void* data) {
