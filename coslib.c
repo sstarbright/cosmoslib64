@@ -18,6 +18,9 @@ void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_d
     rdpq_debug_start();
 
     t3d_init((T3DInitParams){});
+
+    srand(getentropy32());
+    register_VI_handler((void(*)(void))rand);
 }
 void coslib_end() {
     t3d_destroy();
@@ -69,8 +72,8 @@ void load_scn(scene_o_t* scn, const char* path, int acts, void* data) {
         int (*script_acts)() = dlsym(script, "acts");
         if (script_acts)
             acts += script_acts();
-        scn->actor = malloc(acts*sizeof(actor_scr_o_t));
-        void (*scr_init)(script_o_t* self, void* data) = dlsym(script->dso, "init");
+        scn->actors = malloc(acts*sizeof(actor_scr_o_t));
+        void (*scr_init)(script_o_t* self, void* data) = dlsym(script, "init");
         if (scr_init)
             scr_init(script, data);
     }
@@ -110,14 +113,14 @@ actor_o_t* new_act(actor_scr_o_t* act, void* data) {
         actor_o_t* new_actor = (actor_o_t*)(inst_base+this_index*size);
         new_actor->exists = true;
         act->new(new_actor, data);
-        act->used = act->used > this_index ? act->used : this_index;
+        act->used = this_index > act->used ? this_index + 1 : act->used;
 
         this_index++;
-        actor_o_t* check_actor = (actor_o_t*)(inst_base+this_index*size);
+        actor_o_t* check_actor;
         for (;this_index < act->max_inst; this_index++) {
+            check_actor = (actor_o_t*)(inst_base+this_index*size);
             if (!check_actor->exists)
                 break;
-            check_actor = (actor_o_t*)(inst_base+this_index*size);
         }
         act->last_empty = this_index;
         return new_actor;
@@ -136,21 +139,28 @@ void update_act(actor_scr_o_t* act, float delta, int buffer) {
     }
 }
 void kill_act(actor_o_t* act) {
+    if (!act->exists)
+        return;
     act->exists = false;
-    actor_scr_o_t* base_act = ((actor_scr_o_t*)act);
+    actor_scr_o_t* base_act = act->base;
     int last_empty = base_act->last_empty;
     last_empty = act->index < last_empty ? act->index : last_empty;
     base_act->last_empty = last_empty;
     base_act->kill(act);
-    actor_o_t* check_actor = act;
+    if (act->index < base_act->used-1)
+        return;
     int size = base_act->size;
     int inst_base = (int)base_act->inst;
-    int i = base_act->used;
-    while (i > 0 && !check_actor->exists) {
-        i = i--;
+    // Figure out algorithm to search backwards from deleted inst to find the next empty or get to the end
+    int i = base_act->used-2;
+    actor_o_t* check_actor;
+    while (i >= 0) {
         check_actor = (actor_o_t*)(inst_base+i*size);
+        if (check_actor->exists)
+            break;
+        i--;
     }
-    base_act->used = i;
+    base_act->used = i + 1;
 }
 
 void load_scr(script_o_t* script, const char* path, bool auto_init, void* data) {

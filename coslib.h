@@ -94,7 +94,7 @@ struct actor_scr_o_t {
     // The basic script data of this actor script.
     script_o_t script;
     // An array of actor instances stored in this script.
-    void* inst;
+    actor_o_t* inst;
     // The max number of actors this script can instance.
     int max_inst;
     // The last empty instance.
