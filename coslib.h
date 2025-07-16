@@ -9,7 +9,9 @@
 #include <t3d/t3danim.h>
 
 // Initialize the library with various parameters.
-void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
+// Set bit 0 of cmp_levels to 1 to enable Level 2 compression.
+// Set bit 1 of cmp_levels to 1 to enable Level 3 compression.
+void coslib_init(int cmp_levels, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
 // Uninitialize the library.
 void coslib_end();
 
@@ -18,6 +20,7 @@ typedef struct context_o_t context_o_t;
 typedef struct scene_o_t scene_o_t;
 typedef struct actor_scr_o_t actor_scr_o_t;
 typedef struct actor_o_t actor_o_t;
+
 typedef struct bs_mesh_t bs_mesh_t;
 typedef struct sk_mesh_t sk_mesh_t;
 typedef struct so_mesh_t so_mesh_t;

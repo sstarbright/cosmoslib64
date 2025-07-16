@@ -4,13 +4,16 @@
 joypad_inputs_t joy_pad;
 joypad_buttons_t joy_btn;
 
-void coslib_init(int asset_compress, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter) {
+void coslib_init(int cmp_levels, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter) {
     // UNCOMMENT WHILE WORKING
     debug_init_isviewer();
     debug_init_usblog();
 
     dfs_init(DFS_DEFAULT_LOCATION);
-    asset_init_compression(asset_compress);
+    if (cmp_levels&1)
+        asset_init_compression(2);
+    if (cmp_levels>>1&1)
+        asset_init_compression(3);
     display_init(resolution, color_depth, num_buffers, gamma_correct, filter);
     joypad_init();
 
