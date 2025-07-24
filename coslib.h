@@ -7,6 +7,8 @@
 #include <t3d/t3dmodel.h>
 #include <t3d/t3dskeleton.h>
 #include <t3d/t3danim.h>
+#define FNV1A_BASIS 2166136261
+#define FNV1A_PRIME 16777619
 
 // Initialize the library with various parameters.
 // Set bit 0 of cmp_levels to 1 to enable Level 2 compression.
@@ -14,12 +16,19 @@
 void coslib_init(int cmp_levels, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
 // Uninitialize the library.
 void coslib_end();
+// Calculate the FNV-1A hash of a specific key string.
+// Pass a modulus to wrap the result
+int hash_fnv1a(const char* key, int modulus);
 
 typedef struct script_o_t script_o_t;
 typedef struct context_o_t context_o_t;
 typedef struct scene_o_t scene_o_t;
 typedef struct actor_scr_o_t actor_scr_o_t;
 typedef struct actor_o_t actor_o_t;
+
+typedef struct seg_meshlnk_t seg_meshlnk_t;
+typedef struct seg_bonesetup_t seg_bonesetup_t;
+typedef struct seg_bone_t seg_bone_t;
 
 typedef struct bs_mesh_t bs_mesh_t;
 typedef struct sk_mesh_t sk_mesh_t;
@@ -122,6 +131,25 @@ struct actor_o_t {
     bool exists;
     // This actor's index within the base script's instance array
     int index;
+};
+
+// A struct that acts as a temporary link between segmented Tiny3D objects.
+struct seg_meshlnk_t {
+    T3DObject* mesh;
+    seg_meshlnk_t* next;
+};
+// A struct that holds a temporary linked list of segmented Tiny3D objects.
+struct seg_bonesetup_t {
+    seg_meshlnk_t* linked;
+    const char* name;
+    int count;
+    T3DBone* bone;
+};
+// A struct that holds a bone and a list of segmented Tiny3D objects.
+struct seg_bone_t {
+    T3DBone* bone;
+    T3DObject** meshes;
+    T3DMat4FP* mat_buffer;
 };
 
 struct mesh_t {
