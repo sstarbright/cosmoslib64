@@ -31,10 +31,10 @@ void coslib_end() {
     rdpq_close();
     display_close();
 }
-int hash_fnv1a(const char* key, int modulus) {
+uint32_t hash_fnv1a(const char* key, uint32_t modulus) {
     int length = strlen(key);
 
-    int hash = FNV1A_BASIS;
+    uint32_t hash = FNV1A_BASIS;
     for (int i = 0; i < length; i++) {
         hash ^= key[i];
         hash *= FNV1A_PRIME;

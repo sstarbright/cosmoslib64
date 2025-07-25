@@ -18,7 +18,7 @@ void coslib_init(int cmp_levels, resolution_t resolution, bitdepth_t color_depth
 void coslib_end();
 // Calculate the FNV-1A hash of a specific key string.
 // Pass a modulus to wrap the result
-int hash_fnv1a(const char* key, int modulus);
+uint32_t hash_fnv1a(const char* key, uint32_t modulus);
 
 typedef struct script_o_t script_o_t;
 typedef struct context_o_t context_o_t;
@@ -140,7 +140,8 @@ struct seg_meshlnk_t {
 };
 // A struct that holds a temporary linked list of segmented Tiny3D objects.
 struct seg_bonesetup_t {
-    seg_meshlnk_t* linked;
+    seg_meshlnk_t* first;
+    seg_meshlnk_t* last;
     const char* name;
     int count;
     T3DBone* bone;
@@ -150,6 +151,7 @@ struct seg_bone_t {
     T3DBone* bone;
     T3DObject** meshes;
     T3DMat4FP* mat_buffer;
+    int count;
 };
 
 struct mesh_t {
