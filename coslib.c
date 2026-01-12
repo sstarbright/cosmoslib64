@@ -1,36 +1,76 @@
 #include "coslib.h"
+#include "rdpq.h"
 #include <libdragon.h>
 
 joypad_inputs_t joy_pad;
 joypad_buttons_t joy_btn;
+float max_delta;
+float fix_delta;
 
-void coslib_init(int cmp_levels, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter) {
-    // UNCOMMENT WHILE WORKING
-    debug_init_isviewer();
-    debug_init_usblog();
+void coslib_init(coslib_init_params_t params) {
+    max_delta = 1.f/params.frame_rate;
+    fix_delta = 1.f/params.fixed_rate;
+    if (params.debug_mode) {
+        debug_init_isviewer();
+        debug_init_usblog();
+    }
 
     dfs_init(DFS_DEFAULT_LOCATION);
-    if (cmp_levels&1)
+    if (params.cmp_levels&1)
         asset_init_compression(2);
-    if (cmp_levels>>1&1)
+    if (params.cmp_levels>>1&1)
         asset_init_compression(3);
-    display_init(resolution, color_depth, num_buffers, gamma_correct, filter);
+    display_init(params.resolution, params.color_depth, params.render_buffers, params.gamma_correct, params.filter);
     joypad_init();
 
     rdpq_init();
-    rdpq_debug_start();
+
+    if (params.debug_mode)
+        rdpq_debug_start();
 
     t3d_init((T3DInitParams){});
 
     srand(getentropy32());
     register_VI_handler((void(*)(void))rand);
+
+    audio_init(params.frequency, params.audio_buffers);
+    mixer_init(params.channels);
 }
-void coslib_end() {
+void coslib_stop() {
+    coslib_end();
     t3d_destroy();
     joypad_close();
     rdpq_close();
     display_close();
 }
+
+float get_time_s() { return (float)((double)get_ticks_ms() / 1000.0); }
+
+int main(void) {
+    coslib_start();
+
+    float elapsedTime = get_time_s();
+    float fixedTime = elapsedTime;
+
+    for (uint32_t frame=0; ;++frame) {
+        float newTime = get_time_s();
+
+        float deltaTime = newTime - elapsedTime;
+        elapsedTime += deltaTime ? deltaTime <= max_delta : max_delta;
+
+        while (elapsedTime-fixedTime >= fix_delta) {
+            fixedTime += fix_delta;
+            coslib_fixupdate(fix_delta);
+        }
+
+        coslib_update(deltaTime, frame % display_get_num_buffers());
+    }
+
+    coslib_stop();
+
+    return 0;
+}
+
 uint32_t hash_fnv1a(const char* key, uint32_t modulus) {
     int length = strlen(key);
 
@@ -39,7 +79,7 @@ uint32_t hash_fnv1a(const char* key, uint32_t modulus) {
         hash ^= key[i];
         hash *= FNV1A_PRIME;
     }
-    
+
     return hash%modulus;
 }
 
@@ -80,7 +120,7 @@ void unreq_ctx(context_o_t* ctx, int entry) {
 
 void load_scn(scene_o_t* scn, const char* path, int acts, void* data) {
     load_scr(&scn->script, path, false, data);
-    
+
     void* script = scn->script.dso;
     if (script) {
         int (*script_acts)() = dlsym(script, "acts");
@@ -106,10 +146,10 @@ void load_act(actor_scr_o_t* act, const char* path, int size, int max, void* dat
     act->new = dlsym(((script_o_t*)act)->dso, "new");
     act->kill = dlsym(((script_o_t*)act)->dso, "kill");
     actor_o_t* empty_actor;
-    int inst_base = (int)act->inst;
-    
+    actor_o_t* inst_base = act->inst;
+
     for (int i = 0; i < max; i++) {
-        empty_actor = (actor_o_t*)(inst_base+i*size);
+        empty_actor = inst_base+i*size;
         empty_actor->exists = false;
         empty_actor->base = act;
         empty_actor->index = i;
@@ -121,10 +161,10 @@ void unload_act(actor_scr_o_t* act) {
 }
 actor_o_t* new_act(actor_scr_o_t* act, void* data) {
     if (act->last_empty < act->max_inst) {
-        int inst_base = (int)act->inst;
+        actor_o_t* inst_base = act->inst;
         int this_index = act->last_empty;
         int size = act->size;
-        actor_o_t* new_actor = (actor_o_t*)(inst_base+this_index*size);
+        actor_o_t* new_actor = inst_base+this_index*size;
         new_actor->exists = true;
         act->new(new_actor, data);
         act->used = this_index > act->used ? this_index + 1 : act->used;
@@ -132,7 +172,7 @@ actor_o_t* new_act(actor_scr_o_t* act, void* data) {
         this_index++;
         actor_o_t* check_actor;
         for (;this_index < act->max_inst; this_index++) {
-            check_actor = (actor_o_t*)(inst_base+this_index*size);
+            check_actor = inst_base+this_index*size;
             if (!check_actor->exists)
                 break;
         }
@@ -143,11 +183,11 @@ actor_o_t* new_act(actor_scr_o_t* act, void* data) {
 }
 void update_act(actor_scr_o_t* act, float delta, int buffer) {
     int size = act->size;
-    int inst_base = (int)act->inst;
+    actor_o_t* inst_base = act->inst;
     void(*act_up)(float delta, int buffer, void* data) = act->script.up;
     actor_o_t* up_actor;
     for (int i=0; i < act->used; i++) {
-        up_actor = (actor_o_t*)(inst_base+i*size);
+        up_actor = inst_base+i*size;
         if (up_actor->exists)
             act_up(delta, buffer, (void*)up_actor);
     }
@@ -164,12 +204,12 @@ void kill_act(actor_o_t* act) {
     if (act->index < base_act->used-1)
         return;
     int size = base_act->size;
-    int inst_base = (int)base_act->inst;
+    actor_o_t* inst_base = base_act->inst;
     // Figure out algorithm to search backwards from deleted inst to find the next empty or get to the end
     int i = base_act->used-2;
     actor_o_t* check_actor;
     while (i >= 0) {
-        check_actor = (actor_o_t*)(inst_base+i*size);
+        check_actor = inst_base+i*size;
         if (check_actor->exists)
             break;
         i--;

@@ -10,29 +10,48 @@
 #define FNV1A_BASIS 2166136261
 #define FNV1A_PRIME 16777619
 
-// Initialize the library with various parameters.
-// Set bit 0 of cmp_levels to 1 to enable Level 2 compression.
-// Set bit 1 of cmp_levels to 1 to enable Level 3 compression.
-void coslib_init(int cmp_levels, resolution_t resolution, bitdepth_t color_depth, int num_buffers, gamma_t gamma_correct, filter_options_t filter);
-// Uninitialize the library.
+// Called when the game boots.
+// Make sure to call coslib_init with your desired parameters.
+void coslib_start();
+
+// Parameters for initializing the game.
+typedef struct coslib_init_params_t coslib_init_params_t;
+// Initialize the library with the given parameters.
+void coslib_init(coslib_init_params_t params);
+
+// Called on render update
+void coslib_update(float delta_time, int current_buffer);
+// Called on fixed time update
+void coslib_fixupdate(float delta_time);
+
+// Called when the game closes.
 void coslib_end();
+
+// Close the game.
+void coslib_stop();
+
 // Calculate the FNV-1A hash of a specific key string.
 // Pass a modulus to wrap the result
 uint32_t hash_fnv1a(const char* key, uint32_t modulus);
 
+// An object that holds basic script data.
 typedef struct script_o_t script_o_t;
+// An object that holds context script data.
+// Use it for engine data/functions for specific game situations.
 typedef struct context_o_t context_o_t;
+// An object that holds scene script data.
 typedef struct scene_o_t scene_o_t;
+// An object that holds actor script data.
 typedef struct actor_scr_o_t actor_scr_o_t;
+// An object that holds basic actor data.
 typedef struct actor_o_t actor_o_t;
 
-typedef struct seg_meshlnk_t seg_meshlnk_t;
-typedef struct seg_bonesetup_t seg_bonesetup_t;
-typedef struct seg_bone_t seg_bone_t;
-
-typedef struct bs_mesh_t bs_mesh_t;
-typedef struct sk_mesh_t sk_mesh_t;
-typedef struct so_mesh_t so_mesh_t;
+// An object that holds basic model data.
+typedef struct mesh_o_t mesh_o_t;
+// An object that holds skinned model data.
+typedef struct skmesh_o_t skmesh_o_t;
+// An object that holds sorted model data.
+typedef struct somesh_o_t somesh_o_t;
 
 // Load a context into a context script object.
 void load_ctx(context_o_t* ctx, void* data);
@@ -71,7 +90,37 @@ void load_scr(script_o_t* script, const char* path, bool auto_init, void* data);
 // Unload a script from a script object.
 void unload_scr(script_o_t* script);
 
-// An object that holds the basic script data.
+// Parameters for initializing the game.
+struct coslib_init_params_t {
+    // Whether to enable debug logging.
+    bool debug_mode;
+    // Whether to use compression levels 2 (Bit 0) and/or 3 (Bit 1).
+    int cmp_levels;
+    // Frame update rate.
+    int frame_rate;
+    // Fixed update rate.
+    int fixed_rate;
+
+    // What resolution settings to render with.
+    resolution_t resolution;
+    // What color depth to render with.
+    bitdepth_t color_depth;
+    // The number of buffers to render with.
+    int render_buffers;
+    // Gamma correction setting.
+    gamma_t gamma_correct;
+    // Screen filtering flags.
+    filter_options_t filter;
+
+    // The frequency to play audio at.
+    int frequency;
+    // The number of buffers to play audio with.
+    int audio_buffers;
+    // The number of channels to play audio with.
+    int channels;
+};
+
+// An object that holds basic script data.
 struct script_o_t {
     // The handle for the loaded DSO.
     void* dso;
@@ -129,48 +178,45 @@ struct actor_o_t {
     actor_scr_o_t* base;
     // Whether this actor object has been instanced or not.
     bool exists;
-    // This actor's index within the base script's instance array
+    // This actor's index within the base script's instance array.
     int index;
 };
 
-// A struct that acts as a temporary link between segmented Tiny3D objects.
-struct seg_meshlnk_t {
-    T3DObject* mesh;
-    seg_meshlnk_t* next;
-};
-// A struct that holds a temporary linked list of segmented Tiny3D objects.
-struct seg_bonesetup_t {
-    seg_meshlnk_t* first;
-    seg_meshlnk_t* last;
-    const char* name;
-    int count;
-    T3DBone* bone;
-};
-// A struct that holds a bone and a list of segmented Tiny3D objects.
-struct seg_bone_t {
-    T3DBone* bone;
-    T3DObject** meshes;
-    T3DMat4FP* mat_buffer;
-    int count;
-};
-
-struct mesh_t {
+// An object that holds basic model data.
+struct mesh_o_t {
+    // The Tiny3D model data for this model.
     T3DModel* model;
+    // The primitive color to apply to this model.
     color_t color;
+    // RSPQ block for this model.
     rspq_block_t* block;
+    // Matrix Buffer for this model. (A matrix per each render buffer)
     T3DMat4FP* mat_buffer;
 };
-struct sk_mesh_t {
+// An object that holds skinned model data.
+struct skmesh_o_t {
+    // The Tiny3D model data for this model.
     T3DModel* model;
+    // The primitive color to apply to this model.
     color_t color;
+    // RSPQ block for this model.
     rspq_block_t* block;
+    // Matrix Buffer for this model. (A matrix per each render buffer)
     T3DMat4FP* mat_buffer;
+    // Main Skeleton for this model.
     T3DSkeleton skel;
+    // Blending Skeleton for this model.
     T3DSkeleton b_skel;
+
+    // Add animation stuff here too!
 };
-struct so_mesh_t {
+// An object that holds sorted model data.
+struct somesh_o_t {
+    // An array of Tiny3D objects, to be rendered in order;
     T3DObject** layers;
+    // The primitive color to apply to this model.
     color_t color;
+    // Matrix Buffer for this model. (A matrix per each render buffer)
     T3DMat4FP* mat_buffer;
 };
 
