@@ -32,8 +32,6 @@ void coslib_init(coslib_init_params_t params) {
     if (params.debug_mode)
         rdpq_debug_start();
 
-    t3d_init((T3DInitParams){});
-
     srand(getentropy32());
     register_VI_handler((void(*)(void))rand);
 
@@ -42,7 +40,6 @@ void coslib_init(coslib_init_params_t params) {
 }
 void coslib_stop() {
     coslib_end();
-    t3d_destroy();
     joypad_close();
     rdpq_close();
     display_close();

@@ -3,10 +3,6 @@
 
 #include <libdragon.h>
 //#include <rspq_profile.h>
-#include <t3d/t3ddebug.h>
-#include <t3d/t3dmodel.h>
-#include <t3d/t3dskeleton.h>
-#include <t3d/t3danim.h>
 #define FNV1A_BASIS 2166136261
 #define FNV1A_PRIME 16777619
 
@@ -45,13 +41,6 @@ typedef struct scene_o_t scene_o_t;
 typedef struct actor_scr_o_t actor_scr_o_t;
 // An object that holds basic actor data.
 typedef struct actor_o_t actor_o_t;
-
-// An object that holds basic model data.
-typedef struct mesh_o_t mesh_o_t;
-// An object that holds skinned model data.
-typedef struct skmesh_o_t skmesh_o_t;
-// An object that holds sorted model data.
-typedef struct somesh_o_t somesh_o_t;
 
 // Load a context into a context script object.
 void load_ctx(context_o_t* ctx, void* data);
@@ -180,44 +169,6 @@ struct actor_o_t {
     bool exists;
     // This actor's index within the base script's instance array.
     int index;
-};
-
-// An object that holds basic model data.
-struct mesh_o_t {
-    // The Tiny3D model data for this model.
-    T3DModel* model;
-    // The primitive color to apply to this model.
-    color_t color;
-    // RSPQ block for this model.
-    rspq_block_t* block;
-    // Matrix Buffer for this model. (A matrix per each render buffer)
-    T3DMat4FP* mat_buffer;
-};
-// An object that holds skinned model data.
-struct skmesh_o_t {
-    // The Tiny3D model data for this model.
-    T3DModel* model;
-    // The primitive color to apply to this model.
-    color_t color;
-    // RSPQ block for this model.
-    rspq_block_t* block;
-    // Matrix Buffer for this model. (A matrix per each render buffer)
-    T3DMat4FP* mat_buffer;
-    // Main Skeleton for this model.
-    T3DSkeleton skel;
-    // Blending Skeleton for this model.
-    T3DSkeleton b_skel;
-
-    // Add animation stuff here too!
-};
-// An object that holds sorted model data.
-struct somesh_o_t {
-    // An array of Tiny3D objects, to be rendered in order;
-    T3DObject** layers;
-    // The primitive color to apply to this model.
-    color_t color;
-    // Matrix Buffer for this model. (A matrix per each render buffer)
-    T3DMat4FP* mat_buffer;
 };
 
 #endif
