@@ -1,0 +1,106 @@
+ROMNAME = bugsnrox
+ROMTITLE = "Bugs 'N' Rox"
+
+FINAL = 0			# Build the final ROM (tune up compression)
+DEBUG = 1			# Enable printf debugging
+
+BUILD_DIR = build
+ASSETS_DIR = assets
+FILESYSTEM_DIR = filesystem
+
+SRC = src/main.c cosmoslib64/coslib.c
+
+###
+
+include libdragon/n64.mk
+include tiny3d/t3d.mk
+
+N64_ROM_SAVETYPE = eeprom4k
+ifeq ($(strip $(FINAL)),1)
+  N64_ROM_ELFCOMPRESS = 3
+  N64_ROM_DSOCOMPRESS = 3
+  MKSPRITE_FLAGS = --compress 2
+  MKFONT_FLAGS = --compress 2
+endif
+
+IMAGE_LIST   = $(shell find assets/ -type f -name '*.png')
+FONT_LIST    = $(shell find assets/ -type f -name '*.ttf')
+MODEL_LIST   = $(shell find assets/ -type f -name '*.glb')
+SOUND_LIST   = $(shell find assets/ -type f -name '*.wav')
+MUSIC_LIST   = $(shell find assets/ -type f -name '*.xm')
+SCRIPT_LIST  = $(shell find assets/ -type f -name '*.c')
+
+SCRIPT_NAMES = $(SCRIPT_LIST:assets/%.c=%)
+SCRIPT_DSO   = $(SCRIPT_NAMES:%=$(FILESYSTEM_DIR)/%.dso)
+LIB_SCRIPT_LIST  = $(shell find cosmoslib64/dso/ -type f -name '*.c')
+LIB_SCRIPT_NAMES = $(LIB_SCRIPT_LIST:cosmoslib64/dso/%.c=%)
+LIB_SCRIPT_DSO   = $(LIB_SCRIPT_NAMES:%=$(FILESYSTEM_DIR)/cosmoslib64/%.dso)
+ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(IMAGE_LIST:%.png=%.sprite))
+ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(FONT_LIST:%.ttf=%.font64))
+ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MODEL_LIST:%.glb=%.t3dm))
+ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(SOUND_LIST:%.wav=%.wav64))
+ASSETS_LIST += $(subst $(ASSETS_DIR),$(FILESYSTEM_DIR),$(MUSIC_LIST:%.xm=%.xm64))
+
+ifeq ($(DEBUG), 1)
+	N64_CFLAGS += -g -DDEBUG=$(DEBUG)
+	N64_LDFLAGS += -g
+endif
+
+all: $(ROMNAME).z64
+
+define SCRIPT_template
+$$(FILESYSTEM_DIR)/$(1).dso: $$(BUILD_DIR)/assets/$(1).o
+endef
+
+$(foreach script, $(SCRIPT_NAMES), $(eval $(call SCRIPT_template,$(script))))
+
+define LIBSCRIPT_template
+$$(FILESYSTEM_DIR)/cosmoslib64/$(1).dso: $$(BUILD_DIR)/cosmoslib64/dso/$(1).o
+endef
+
+$(foreach script, $(LIB_SCRIPT_NAMES), $(eval $(call LIBSCRIPT_template,$(script))))
+
+$(FILESYSTEM_DIR)/%.sprite: $(ASSETS_DIR)/%.png
+	@mkdir -p $(dir $@)
+	@echo "    [SPRITE] $@"
+	$(N64_MKSPRITE) $(MKSPRITE_FLAGS) -o $(dir $@) "$<"
+
+$(FILESYSTEM_DIR)/%.font64: $(ASSETS_DIR)/%.ttf
+	@mkdir -p $(dir $@)
+	@echo "    [FONT] $@"
+	$(N64_MKFONT) $(MKFONT_FLAGS) -o $(dir $@) "$<"
+
+$(FILESYSTEM_DIR)/%.t3dm: $(ASSETS_DIR)/%.glb
+	@mkdir -p $(dir $@)
+	@echo "    [T3D-MODEL] $@"
+	$(T3D_GLTF_TO_3D) $(T3DM_FLAGS) "$<" $@
+	$(N64_BINDIR)/mkasset -c 2 -o $(dir $@) $@
+
+$(FILESYSTEM_DIR)/%.wav64: $(ASSETS_DIR)/%.wav
+	@mkdir -p $(dir $@)
+	@echo "    [SFX] $@"
+	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) -o $(dir $@) "$<"
+
+$(FILESYSTEM_DIR)/%.xm64: $(ASSETS_DIR)/%.xm
+	@mkdir -p $(dir $@)
+	@echo "    [XM] $@"
+	$(N64_AUDIOCONV) $(AUDIOCONV_FLAGS) -o $(dir $@) "$<"
+
+MAIN_ELF_EXTERNS := $(BUILD_DIR)/$(ROMNAME).externs
+$(MAIN_ELF_EXTERNS): $(SCRIPT_DSO) $(LIB_SCRIPT_DSO)
+$(BUILD_DIR)/$(ROMNAME).dfs: $(ASSETS_LIST) $(SCRIPT_DSO) $(LIB_SCRIPT_DSO)
+$(BUILD_DIR)/$(ROMNAME).elf: $(SRC:%.c=$(BUILD_DIR)/%.o) $(MAIN_ELF_EXTERNS)
+$(ROMNAME).z64: N64_ROM_TITLE=$(ROMTITLE)
+$(ROMNAME).z64: $(BUILD_DIR)/$(ROMNAME).dfs $(BUILD_DIR)/$(ROMNAME).msym
+
+$(BUILD_DIR)/$(ROMNAME).msym: $(BUILD_DIR)/$(ROMNAME).elf
+
+clean:
+	rm -rf $(BUILD_DIR) $(FILESYSTEM_DIR) $(ROMNAME).z64
+
+run: all
+	@ares $(ROMNAME).z64
+
+-include $(wildcard $(BUILD_DIR)/*.d) $(wildcard $(BUILD_DIR)/*/*.d) $(wildcard $(BUILD_DIR)/*/*/*.d) $(wildcard $(BUILD_DIR)/*/*/*/*.d)
+
+.PHONY: all clean run

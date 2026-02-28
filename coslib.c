@@ -1,4 +1,5 @@
 #include "coslib.h"
+#include "display.h"
 #include "rdpq.h"
 #include <libdragon.h>
 
@@ -8,8 +9,8 @@ float max_delta;
 float fix_delta;
 
 void coslib_init(coslib_init_params_t params) {
-    max_delta = 1.f/params.frame_rate;
-    fix_delta = 1.f/params.fixed_rate;
+    max_delta = 1.f/(float)params.frame_rate;
+    fix_delta = 1.f/(float)params.fixed_rate;
     if (params.debug_mode) {
         debug_init_isviewer();
         debug_init_usblog();
@@ -20,7 +21,10 @@ void coslib_init(coslib_init_params_t params) {
         asset_init_compression(2);
     if (params.cmp_levels>>1&1)
         asset_init_compression(3);
+
     display_init(params.resolution, params.color_depth, params.render_buffers, params.gamma_correct, params.filter);
+    display_set_fps_limit(params.frame_rate);
+
     joypad_init();
 
     rdpq_init();
@@ -56,7 +60,9 @@ int main(void) {
         float newTime = get_time_s();
 
         float deltaTime = newTime - elapsedTime;
-        elapsedTime += deltaTime ? deltaTime <= max_delta : max_delta;
+        if (deltaTime > max_delta)
+            deltaTime = max_delta;
+        elapsedTime += deltaTime;
 
         while (elapsedTime-fixedTime >= fix_delta) {
             fixedTime += fix_delta;
